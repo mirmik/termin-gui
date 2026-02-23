@@ -214,6 +214,46 @@ class Theme:
             widget.border_radius = self.border_radius + 1
             widget.font_size = self.font_size
 
+        elif cls_name == "MenuBar":
+            widget.background_color = self.bg_surface
+            widget.text_color = self.text_secondary
+            widget.hover_text_color = self.text_primary
+            widget.active_text_color = self.text_primary
+            widget.hover_color = self.hover_subtle
+            widget.active_color = self.hover
+            widget.font_size = self.font_size
+
+        elif cls_name == "ToolBar":
+            widget.background_color = self.bg_surface
+            widget.item_hover_color = self.hover_subtle
+            widget.item_pressed_color = self.pressed
+            widget.icon_color = self.text_secondary
+            widget.icon_hover_color = self.text_primary
+            widget.icon_disabled_color = self.text_muted
+            widget.separator_color = self.text_muted
+            widget.border_radius = self.border_radius
+
+        elif cls_name == "StatusBar":
+            widget.background_color = self.bg_surface
+            widget.text_color = self.text_muted
+            widget.temp_text_color = self.text_secondary
+            widget.font_size = self.font_size_small
+
+        elif cls_name == "Dialog":
+            widget.background_color = self.bg_surface
+            widget.title_background_color = self._with_alpha(self.bg_surface, 1.0)
+            widget.title_text_color = self.text_primary
+            widget.title_font_size = self.font_size + 2
+            widget.border_radius = self.border_radius + 2
+
+        elif cls_name == "MessageBox":
+            widget.background_color = self.bg_surface
+            widget.title_background_color = self._with_alpha(self.bg_surface, 1.0)
+            widget.title_text_color = self.text_primary
+            widget.title_font_size = self.font_size + 2
+            widget.border_radius = self.border_radius + 2
+            widget.message_font_size = self.font_size
+
 
 # Module-level default theme.  Widgets read from this in __init__.
 current_theme: Theme = Theme.dark()

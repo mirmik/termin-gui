@@ -13,6 +13,7 @@ from tcgui.widgets.widget import Widget
 from tcgui.widgets.events import MouseEvent, MouseWheelEvent, KeyEvent, TextEvent
 from tcgui.widgets.renderer import UIRenderer
 from tcgui.widgets.loader import UILoader
+from tcgui.widgets.shortcuts import ShortcutRegistry
 
 
 @dataclass
@@ -57,6 +58,9 @@ class UI:
         self._last_mouse_y: float = 0.0
         self.tooltip_delay: float = 0.5  # seconds
 
+        # Global keyboard shortcuts
+        self._shortcuts = ShortcutRegistry()
+
     # ------------------------------------------------------------------
     # Properties
     # ------------------------------------------------------------------
@@ -87,6 +91,25 @@ class UI:
     def loader(self) -> UILoader:
         """Access to the loader for registering custom widget types."""
         return self._loader
+
+    # ------------------------------------------------------------------
+    # Global shortcuts
+    # ------------------------------------------------------------------
+
+    def add_shortcut(self, key: Key, mods: int,
+                     callback: Callable[[], None]) -> None:
+        """Register a global keyboard shortcut."""
+        self._shortcuts.add(key, mods, callback)
+
+    def remove_shortcut(self, key: Key, mods: int) -> None:
+        """Unregister a global keyboard shortcut."""
+        self._shortcuts.remove(key, mods)
+
+    def add_shortcut_from_string(self, shortcut_str: str,
+                                 callback: Callable[[], None]) -> None:
+        """Register a shortcut from a string like ``'Ctrl+S'``."""
+        k, m = ShortcutRegistry.parse_shortcut_string(shortcut_str)
+        self._shortcuts.add(k, m, callback)
 
     # ------------------------------------------------------------------
     # _ui propagation
@@ -179,9 +202,13 @@ class UI:
         self._renderer.begin(viewport_w, viewport_h)
         self._root.render(self._renderer)
 
-        # Render overlays on top
+        # Render overlays on top (re-center modal dialogs if viewport changed)
         for entry in self._overlays:
             if entry.modal:
+                w, h = entry.widget.compute_size(viewport_w, viewport_h)
+                x = (viewport_w - w) / 2
+                y = (viewport_h - h) / 2
+                entry.widget.layout(x, y, w, h, viewport_w, viewport_h)
                 self._renderer.draw_rect(0, 0, viewport_w, viewport_h,
                                          (0, 0, 0, 0.3))
             entry.widget.render(self._renderer)
@@ -471,7 +498,19 @@ class UI:
             self._hide_top_overlay()
             return True
 
-        # Let focused widget handle first
+        # If top overlay is modal, route keys to it exclusively
+        if self._overlays:
+            top = self._overlays[-1]
+            if top.modal and top.widget is not self._tooltip_widget:
+                if top.widget.on_key_down(event):
+                    return True
+                return False  # modal blocks further dispatch
+
+        # Global shortcuts
+        if self._shortcuts.try_dispatch(key, mods):
+            return True
+
+        # Let focused widget handle
         if self._focused_widget is not None:
             if self._focused_widget.on_key_down(event):
                 return True

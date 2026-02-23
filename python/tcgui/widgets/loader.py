@@ -11,6 +11,11 @@ from tcgui.widgets.basic import Label, Button, Checkbox, IconButton, Separator, 
 from tcgui.widgets.tree import TreeNode, TreeWidget
 from tcgui.widgets.tabs import TabBar, TabView
 from tcgui.widgets.menu import MenuItem, Menu
+from tcgui.widgets.menu_bar import MenuBar
+from tcgui.widgets.tool_bar import ToolBar, ToolBarItem
+from tcgui.widgets.status_bar import StatusBar
+from tcgui.widgets.dialog import Dialog
+from tcgui.widgets.message_box import MessageBox
 from tcgui.widgets.units import Value
 
 
@@ -38,6 +43,11 @@ class UILoader:
         "TabBar": TabBar,
         "TabView": TabView,
         "Menu": Menu,
+        "MenuBar": MenuBar,
+        "ToolBar": ToolBar,
+        "StatusBar": StatusBar,
+        "Dialog": Dialog,
+        "MessageBox": MessageBox,
         "SpinBox": SpinBox,
         "SliderEdit": SliderEdit,
         "TextArea": TextArea,
@@ -554,6 +564,72 @@ class UILoader:
                 widget.show_scrollbar = bool(data["show_scrollbar"])
             if "scrollbar_width" in data:
                 widget.scrollbar_width = float(data["scrollbar_width"])
+
+        # MenuBar attributes
+        if isinstance(widget, MenuBar):
+            if "background_color" in data:
+                widget.background_color = self._parse_color(data["background_color"])
+            if "text_color" in data:
+                widget.text_color = self._parse_color(data["text_color"])
+            if "hover_color" in data:
+                widget.hover_color = self._parse_color(data["hover_color"])
+            if "active_color" in data:
+                widget.active_color = self._parse_color(data["active_color"])
+            if "font_size" in data:
+                widget.font_size = float(data["font_size"])
+            if "item_padding_x" in data:
+                widget.item_padding_x = float(data["item_padding_x"])
+            if "item_padding_y" in data:
+                widget.item_padding_y = float(data["item_padding_y"])
+
+        # ToolBar attributes
+        if isinstance(widget, ToolBar):
+            if "background_color" in data:
+                widget.background_color = self._parse_color(data["background_color"])
+            if "item_hover_color" in data:
+                widget.item_hover_color = self._parse_color(data["item_hover_color"])
+            if "icon_color" in data:
+                widget.icon_color = self._parse_color(data["icon_color"])
+            if "text_color" in data:
+                widget.text_color = self._parse_color(data["text_color"])
+            if "separator_color" in data:
+                widget.separator_color = self._parse_color(data["separator_color"])
+            if "border_radius" in data:
+                widget.border_radius = float(data["border_radius"])
+            if "font_size" in data:
+                widget.font_size = float(data["font_size"])
+            if "item_size" in data:
+                widget.item_size = float(data["item_size"])
+
+        # StatusBar attributes
+        if isinstance(widget, StatusBar):
+            if "text" in data:
+                widget.set_text(str(data["text"]))
+            if "background_color" in data:
+                widget.background_color = self._parse_color(data["background_color"])
+            if "text_color" in data:
+                widget.text_color = self._parse_color(data["text_color"])
+            if "temp_text_color" in data:
+                widget.temp_text_color = self._parse_color(data["temp_text_color"])
+            if "font_size" in data:
+                widget.font_size = float(data["font_size"])
+            if "padding_x" in data:
+                widget.padding_x = float(data["padding_x"])
+
+        # Dialog attributes
+        if isinstance(widget, Dialog):
+            if "title" in data:
+                widget.title = str(data["title"])
+            if "background_color" in data:
+                widget.background_color = self._parse_color(data["background_color"])
+            if "title_background_color" in data:
+                widget.title_background_color = self._parse_color(data["title_background_color"])
+            if "border_radius" in data:
+                widget.border_radius = float(data["border_radius"])
+            if "padding" in data:
+                widget.padding = float(data["padding"])
+            if "min_width" in data:
+                widget.min_width = float(data["min_width"])
 
         # GroupBox attributes
         if isinstance(widget, GroupBox):

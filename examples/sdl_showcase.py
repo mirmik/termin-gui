@@ -16,7 +16,12 @@ from tcbase import Key, MouseButton, Mods
 from tcgui.widgets.ui import UI
 from tcgui.widgets.basic import Label, Button, ProgressBar, Slider, SpinBox, SliderEdit, TextArea
 from tcgui.widgets.containers import VStack, HStack, Panel, ScrollArea, GroupBox
+from tcgui.widgets.message_box import MessageBox, Buttons
 from tcgui.widgets.tabs import TabView
+from tcgui.widgets.menu import MenuItem, Menu
+from tcgui.widgets.menu_bar import MenuBar
+from tcgui.widgets.tool_bar import ToolBar
+from tcgui.widgets.status_bar import StatusBar
 from tcgui.widgets.units import px, pct
 
 
@@ -440,30 +445,196 @@ def make_groupbox_page():
     return page
 
 
+def make_dialogs_page(ui_ref):
+    """Page with Dialog / MessageBox demonstrations.
+
+    *ui_ref* is a mutable list that will contain the UI instance once
+    ``build_ui`` assigns it (avoids forward-reference issues).
+    """
+    page = VStack()
+    page.spacing = 14
+    page.alignment = "left"
+
+    title = Label()
+    title.text = "Dialogs"
+    title.font_size = 18
+    title.color = (1, 1, 1, 1)
+    page.add_child(title)
+
+    info = Label()
+    info.text = "Click buttons to show modal dialogs:"
+    info.font_size = 13
+    info.color = (0.6, 0.6, 0.6, 1.0)
+    page.add_child(info)
+
+    result_label = Label()
+    result_label.text = "Result: (none yet)"
+    result_label.font_size = 13
+    result_label.color = (0.5, 0.8, 1.0, 1.0)
+
+    def show_result(btn_name):
+        result_label.text = f"Result: {btn_name}"
+
+    row1 = HStack()
+    row1.spacing = 10
+    row1.alignment = "center"
+
+    btn_info = Button()
+    btn_info.text = "Info"
+    btn_info.padding = 8
+    btn_info.on_click = lambda: MessageBox.info(
+        ui_ref[0], "Information", "Operation completed successfully.",
+        on_result=show_result)
+    row1.add_child(btn_info)
+
+    btn_warn = Button()
+    btn_warn.text = "Warning"
+    btn_warn.padding = 8
+    btn_warn.on_click = lambda: MessageBox.warning(
+        ui_ref[0], "Warning", "Disk space is running low.",
+        on_result=show_result)
+    row1.add_child(btn_warn)
+
+    btn_err = Button()
+    btn_err.text = "Error"
+    btn_err.padding = 8
+    btn_err.on_click = lambda: MessageBox.error(
+        ui_ref[0], "Error", "File not found: project.json",
+        on_result=show_result)
+    row1.add_child(btn_err)
+
+    btn_q = Button()
+    btn_q.text = "Question"
+    btn_q.padding = 8
+    btn_q.on_click = lambda: MessageBox.question(
+        ui_ref[0], "Confirm", "Delete selected items?",
+        on_result=show_result)
+    row1.add_child(btn_q)
+
+    page.add_child(row1)
+
+    # Custom buttons
+    row2 = HStack()
+    row2.spacing = 10
+    row2.alignment = "center"
+
+    btn_yn_cancel = Button()
+    btn_yn_cancel.text = "Yes/No/Cancel"
+    btn_yn_cancel.padding = 8
+    btn_yn_cancel.on_click = lambda: MessageBox.question(
+        ui_ref[0], "Save Changes",
+        "Document has been modified. Save?",
+        buttons=Buttons.YES_NO_CANCEL,
+        on_result=show_result)
+    row2.add_child(btn_yn_cancel)
+
+    btn_ok_cancel = Button()
+    btn_ok_cancel.text = "OK/Cancel"
+    btn_ok_cancel.padding = 8
+    btn_ok_cancel.on_click = lambda: MessageBox.info(
+        ui_ref[0], "Proceed",
+        "This action cannot be undone.",
+        buttons=Buttons.OK_CANCEL,
+        on_result=show_result)
+    row2.add_child(btn_ok_cancel)
+
+    page.add_child(row2)
+    page.add_child(result_label)
+
+    return page
+
+
 # --- UI ---
 
 def build_ui(graphics):
-    root = Panel()
+    ui_ref = [None]   # mutable ref so lambdas created before UI can reach it
+
+    root = VStack()
     root.preferred_width = pct(100)
     root.preferred_height = pct(100)
-    root.background_color = (0.12, 0.12, 0.14, 1.0)
-    root.padding = 20
+    root.spacing = 0
+    root.alignment = "left"
+
+    # --- StatusBar (created early so ToolBar callbacks can reference it) ---
+    status_bar = StatusBar()
+    status_bar.set_text("Ready | tcgui Widget Showcase")
+
+    # --- MenuBar ---
+    menu_bar = MenuBar()
+
+    file_menu = Menu()
+    file_menu.items = [
+        MenuItem("New", shortcut="Ctrl+N",
+                 on_click=lambda: status_bar.show_message("New project")),
+        MenuItem("Open", shortcut="Ctrl+O",
+                 on_click=lambda: status_bar.show_message("Open...")),
+        MenuItem("Save", shortcut="Ctrl+S",
+                 on_click=lambda: status_bar.show_message("Saved")),
+        MenuItem("Save As", shortcut="Ctrl+Shift+S",
+                 on_click=lambda: status_bar.show_message("Save As...")),
+        MenuItem.sep(),
+        MenuItem("Quit", shortcut="Ctrl+Q",
+                 on_click=lambda: status_bar.show_message("Quit requested")),
+    ]
+    menu_bar.add_menu("File", file_menu)
+
+    edit_menu = Menu()
+    edit_menu.items = [
+        MenuItem("Undo", shortcut="Ctrl+Z",
+                 on_click=lambda: status_bar.show_message("Undo")),
+        MenuItem("Redo", shortcut="Ctrl+Shift+Z",
+                 on_click=lambda: status_bar.show_message("Redo")),
+        MenuItem.sep(),
+        MenuItem("Cut", shortcut="Ctrl+X"),
+        MenuItem("Copy", shortcut="Ctrl+C"),
+        MenuItem("Paste", shortcut="Ctrl+V"),
+    ]
+    menu_bar.add_menu("Edit", edit_menu)
+
+    help_menu = Menu()
+    help_menu.items = [
+        MenuItem("About",
+                 on_click=lambda: status_bar.show_message("tcgui Widget Showcase v0.1")),
+    ]
+    menu_bar.add_menu("Help", help_menu)
+
+    root.add_child(menu_bar)
+
+    # --- ToolBar ---
+    toolbar = ToolBar()
+
+    toolbar.add_action(icon="\u2702", tooltip="Cut",
+                       on_click=lambda: status_bar.show_message("Cut"))
+    toolbar.add_action(icon="\u2398", tooltip="Open",
+                       on_click=lambda: status_bar.show_message("Open..."))
+    toolbar.add_separator()
+    toolbar.add_action(text="Fit", tooltip="Fit to window",
+                       on_click=lambda: status_bar.show_message("Fit to window"))
+    toolbar.add_action(text="Reset", tooltip="Reset view",
+                       on_click=lambda: status_bar.show_message("View reset"))
+
+    root.add_child(toolbar)
+
+    # --- Content area ---
+    content = Panel()
+    content.preferred_width = pct(100)
+    content.preferred_height = px(500)
+    content.background_color = (0.12, 0.12, 0.14, 1.0)
+    content.padding = 20
 
     layout = VStack()
     layout.spacing = 16
     layout.alignment = "left"
 
-    # Title
     title = Label()
     title.text = "tcgui Widget Showcase"
     title.font_size = 24
     title.color = (1, 1, 1, 1)
     layout.add_child(title)
 
-    # TabView with all demos
     tabs = TabView()
     tabs.preferred_width = px(550)
-    tabs.preferred_height = px(450)
+    tabs.preferred_height = px(420)
 
     tabs.add_tab("Progress", make_progress_page())
     tabs.add_tab("Slider", make_slider_page())
@@ -471,19 +642,34 @@ def build_ui(graphics):
     tabs.add_tab("SpinBox", make_spinbox_page())
     tabs.add_tab("TextArea", make_textarea_page())
     tabs.add_tab("GroupBox", make_groupbox_page())
+    tabs.add_tab("Dialogs", make_dialogs_page(ui_ref))
 
     layout.add_child(tabs)
-    root.add_child(layout)
+    content.add_child(layout)
+    root.add_child(content)
+
+    # --- StatusBar ---
+    root.add_child(status_bar)
 
     ui = UI(graphics)
     ui.root = root
+    ui_ref[0] = ui
+
+    # --- Global shortcuts (matching menu items) ---
+    ui.add_shortcut_from_string("Ctrl+N", lambda: status_bar.show_message("New project"))
+    ui.add_shortcut_from_string("Ctrl+O", lambda: status_bar.show_message("Open..."))
+    ui.add_shortcut_from_string("Ctrl+S", lambda: status_bar.show_message("Saved"))
+    ui.add_shortcut_from_string("Ctrl+Shift+S", lambda: status_bar.show_message("Save As..."))
+    ui.add_shortcut_from_string("Ctrl+Z", lambda: status_bar.show_message("Undo"))
+    ui.add_shortcut_from_string("Ctrl+Shift+Z", lambda: status_bar.show_message("Redo"))
+
     return ui
 
 
 # --- Main ---
 
 def main():
-    window, gl_ctx = create_window("tcgui — Widget Showcase", 700, 600)
+    window, gl_ctx = create_window("tcgui — Widget Showcase", 720, 650)
 
     graphics = OpenGLGraphicsBackend.get_instance()
     graphics.ensure_ready()

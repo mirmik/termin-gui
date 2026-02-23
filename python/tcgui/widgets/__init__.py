@@ -24,6 +24,12 @@ from tcgui.widgets.text_area import TextArea
 from tcgui.widgets.tree import TreeNode, TreeWidget
 from tcgui.widgets.tabs import TabBar, TabView
 from tcgui.widgets.menu import MenuItem, Menu
+from tcgui.widgets.menu_bar import MenuBar
+from tcgui.widgets.tool_bar import ToolBar, ToolBarItem
+from tcgui.widgets.status_bar import StatusBar
+from tcgui.widgets.dialog import Dialog
+from tcgui.widgets.message_box import MessageBox, Buttons
+from tcgui.widgets.shortcuts import ShortcutRegistry
 from tcgui.widgets.renderer import UIRenderer
 from tcgui.widgets.loader import UILoader
 from tcgui.widgets.ui import UI
@@ -39,5 +45,7 @@ __all__ = [
     "TreeNode", "TreeWidget",
     "TabBar", "TabView",
     "MenuItem", "Menu",
+    "MenuBar", "ToolBar", "ToolBarItem", "StatusBar",
+    "Dialog", "MessageBox", "Buttons", "ShortcutRegistry",
     "UIRenderer", "UILoader", "UI",
 ]

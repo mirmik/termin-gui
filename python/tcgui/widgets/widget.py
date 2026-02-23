@@ -49,6 +49,9 @@ class Widget:
         # Tooltip text (shown on hover after delay)
         self.tooltip: str | None = None
 
+        # Layout stretch: when True, widget fills remaining space in HStack/VStack
+        self.stretch: bool = False
+
         # Cursor: "", "arrow", "cross", "hand", "text", "move"
         self.cursor: str = ""
 

@@ -260,12 +260,12 @@ class UIRenderer:
         top = ny
         bottom = ny - nh
 
-        # UV flipped vertically: image top-left = (0,0) but GL texture (0,0) is bottom-left
+        # GL texture row 0 = numpy row 0 = image top, so v=0 at screen top
         vertices = np.array([
-            [left, top, 0, 1],
-            [right, top, 1, 1],
-            [left, bottom, 0, 0],
-            [right, bottom, 1, 0],
+            [left, top, 0, 0],
+            [right, top, 1, 0],
+            [left, bottom, 0, 1],
+            [right, bottom, 1, 1],
         ], dtype=np.float32)
 
         self._graphics.draw_ui_textured_quad(vertices)

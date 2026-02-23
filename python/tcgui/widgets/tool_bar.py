@@ -81,6 +81,10 @@ class ToolBar(Widget):
     # Public API
     # ------------------------------------------------------------------
 
+    def add_item(self, item: ToolBarItem) -> None:
+        """Append a toolbar item."""
+        self.items.append(item)
+
     def add_action(
         self,
         icon: str = "",

@@ -81,6 +81,10 @@ class Menu(Widget):
         # Internal
         self._hovered_index: int = -1
 
+    def add_item(self, item: MenuItem) -> None:
+        """Append a menu item."""
+        self.items.append(item)
+
     # ------------------------------------------------------------------
     # Sizing
     # ------------------------------------------------------------------

@@ -46,6 +46,10 @@ class StatusBar(Widget):
         """The persistent status text."""
         return self._text
 
+    @text.setter
+    def text(self, value: str):
+        self._text = value
+
     def set_text(self, text: str):
         """Set the persistent status text."""
         self._text = text

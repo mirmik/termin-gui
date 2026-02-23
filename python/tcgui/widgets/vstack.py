@@ -25,12 +25,16 @@ class VStack(Widget):
         total_height = 0.0
 
         for child in self.children:
+            if not child.visible:
+                continue
             cw, ch = child.compute_size(viewport_w, viewport_h)
             max_width = max(max_width, cw)
-            total_height += ch
+            if not child.stretch:
+                total_height += ch
 
-        if self.children:
-            total_height += self.spacing * (len(self.children) - 1)
+        visible = [c for c in self.children if c.visible]
+        if visible:
+            total_height += self.spacing * (len(visible) - 1)
 
         if self.preferred_width:
             max_width = self.preferred_width.to_pixels(viewport_w)
@@ -43,32 +47,41 @@ class VStack(Widget):
                viewport_w: float, viewport_h: float):
         super().layout(x, y, width, height, viewport_w, viewport_h)
 
-        # Calculate total content height
-        total_content_height = 0.0
-        for child in self.children:
-            _, ch = child.compute_size(viewport_w, viewport_h)
-            total_content_height += ch
-        if self.children:
-            total_content_height += self.spacing * (len(self.children) - 1)
+        visible = [c for c in self.children if c.visible]
+        if not visible:
+            return
 
-        # Vertical justify
-        if self.justify == "center":
-            cy = y + (height - total_content_height) / 2
-        elif self.justify == "end":
-            cy = y + height - total_content_height
-        else:  # start
+        # First pass: measure non-stretch children, count stretch children
+        fixed_height = 0.0
+        stretch_count = 0
+        child_heights = []
+        for child in visible:
+            if child.stretch:
+                stretch_count += 1
+                child_heights.append(0.0)
+            else:
+                _, ch = child.compute_size(viewport_w, viewport_h)
+                fixed_height += ch
+                child_heights.append(ch)
+
+        spacing_total = self.spacing * (len(visible) - 1)
+        remaining = max(0.0, height - fixed_height - spacing_total)
+        stretch_h = remaining / stretch_count if stretch_count > 0 else 0.0
+
+        # Fill in stretch heights
+        for i, child in enumerate(visible):
+            if child.stretch:
+                child_heights[i] = stretch_h
+
+        # Vertical justify (only meaningful without stretch children)
+        total_h = sum(child_heights) + spacing_total
+        if self.justify == "center" and stretch_count == 0:
+            cy = y + (height - total_h) / 2
+        elif self.justify == "end" and stretch_count == 0:
+            cy = y + height - total_h
+        else:
             cy = y
 
-        for child in self.children:
-            cw, ch = child.compute_size(viewport_w, viewport_h)
-
-            # Horizontal alignment
-            if self.alignment == "left":
-                cx = x
-            elif self.alignment == "right":
-                cx = x + width - cw
-            else:  # center
-                cx = x + (width - cw) / 2
-
-            child.layout(cx, cy, cw, ch, viewport_w, viewport_h)
+        for child, ch in zip(visible, child_heights):
+            child.layout(x, cy, width, ch, viewport_w, viewport_h)
             cy += ch + self.spacing

@@ -1,10 +1,9 @@
-"""TreeWidget example with SDL2 + OpenGL.
+"""Showcase example with all new tcgui widgets.
 
-Displays a file-tree-like structure with expand/collapse,
-keyboard navigation, and rich content nodes.
+Demonstrates: ScrollArea, ProgressBar, Slider, TabBar/TabView, mouse wheel.
 
 Requirements: tcbase, tgfx, tcgui, PySDL2
-Run: python3 examples/sdl_tree.py
+Run: python3 examples/sdl_showcase.py
 """
 
 import ctypes
@@ -15,13 +14,13 @@ from tgfx import OpenGLGraphicsBackend
 from tcbase import Key
 
 from tcgui.widgets.ui import UI
-from tcgui.widgets.basic import Label
-from tcgui.widgets.containers import VStack, HStack, Panel
-from tcgui.widgets.tree import TreeNode, TreeWidget
+from tcgui.widgets.basic import Label, Button, ProgressBar, Slider
+from tcgui.widgets.containers import VStack, HStack, Panel, ScrollArea
+from tcgui.widgets.tabs import TabView
 from tcgui.widgets.units import px, pct
 
 
-# --- SDL helpers (same as sdl_hello.py) ---
+# --- SDL helpers ---
 
 def create_window(title: str, width: int, height: int):
     if sdl2.SDL_Init(sdl2.SDL_INIT_VIDEO) != 0:
@@ -101,35 +100,153 @@ def translate_mods(sdl_mods: int) -> int:
     return result
 
 
-# --- Helpers to build tree nodes ---
+# --- Tab pages ---
 
-def make_label_node(text, color=(0.9, 0.9, 0.9, 1.0), font_size=14):
-    """Create a TreeNode with a simple text label."""
-    lbl = Label()
-    lbl.text = text
-    lbl.color = color
-    lbl.font_size = font_size
-    return TreeNode(content=lbl)
+def make_progress_page():
+    """Page with ProgressBar widgets."""
+    page = VStack()
+    page.spacing = 12
+    page.alignment = "left"
+
+    title = Label()
+    title.text = "ProgressBar"
+    title.font_size = 18
+    title.color = (1, 1, 1, 1)
+    page.add_child(title)
+
+    # Basic progress bar
+    pb1 = ProgressBar()
+    pb1.value = 0.65
+    pb1.preferred_width = px(350)
+    pb1.preferred_height = px(20)
+    page.add_child(pb1)
+
+    # Progress bar with text
+    pb2 = ProgressBar()
+    pb2.value = 0.42
+    pb2.show_text = True
+    pb2.preferred_width = px(350)
+    pb2.preferred_height = px(24)
+    pb2.fill_color = (0.2, 0.8, 0.4, 1.0)
+    page.add_child(pb2)
+
+    # Slider to control progress
+    info = Label()
+    info.text = "Drag the slider to change progress:"
+    info.font_size = 13
+    info.color = (0.6, 0.6, 0.6, 1.0)
+    page.add_child(info)
+
+    slider = Slider()
+    slider.preferred_width = px(350)
+    slider.value = 0.65
+    page.add_child(slider)
+
+    def on_slider(val):
+        pb1.value = val
+        pb2.value = val
+
+    slider.on_change = on_slider
+
+    return page
 
 
-def make_icon_node(icon, icon_color, text, text_color=(0.9, 0.9, 0.9, 1.0)):
-    """Create a TreeNode with icon + text (HStack)."""
-    row = HStack()
-    row.spacing = 6
+def make_slider_page():
+    """Page with Slider widgets."""
+    page = VStack()
+    page.spacing = 14
+    page.alignment = "left"
 
-    icon_lbl = Label()
-    icon_lbl.text = icon
-    icon_lbl.color = icon_color
-    icon_lbl.font_size = 14
-    row.add_child(icon_lbl)
+    title = Label()
+    title.text = "Slider"
+    title.font_size = 18
+    title.color = (1, 1, 1, 1)
+    page.add_child(title)
 
-    text_lbl = Label()
-    text_lbl.text = text
-    text_lbl.color = text_color
-    text_lbl.font_size = 14
-    row.add_child(text_lbl)
+    # Continuous slider
+    lbl1 = Label()
+    lbl1.text = "Continuous: 0.50"
+    lbl1.font_size = 13
+    lbl1.color = (0.8, 0.8, 0.8, 1.0)
+    page.add_child(lbl1)
 
-    return TreeNode(content=row)
+    s1 = Slider()
+    s1.value = 0.5
+    s1.preferred_width = px(350)
+    s1.on_change = lambda v: setattr(lbl1, 'text', f"Continuous: {v:.2f}")
+    page.add_child(s1)
+
+    # Stepped slider (0-100, step 10)
+    lbl2 = Label()
+    lbl2.text = "Stepped (0-100, step 10): 50"
+    lbl2.font_size = 13
+    lbl2.color = (0.8, 0.8, 0.8, 1.0)
+    page.add_child(lbl2)
+
+    s2 = Slider()
+    s2.min_value = 0
+    s2.max_value = 100
+    s2.step = 10
+    s2.value = 50
+    s2.preferred_width = px(350)
+    s2.fill_color = (0.9, 0.5, 0.2, 1.0)
+    s2.on_change = lambda v: setattr(lbl2, 'text', f"Stepped (0-100, step 10): {int(v)}")
+    page.add_child(s2)
+
+    # Color slider
+    lbl3 = Label()
+    lbl3.text = "Color mix slider"
+    lbl3.font_size = 13
+    lbl3.color = (0.8, 0.8, 0.8, 1.0)
+    page.add_child(lbl3)
+
+    s3 = Slider()
+    s3.preferred_width = px(350)
+    s3.fill_color = (0.8, 0.2, 0.2, 1.0)
+    s3.thumb_color = (1.0, 0.4, 0.4, 1.0)
+    page.add_child(s3)
+
+    return page
+
+
+def make_scroll_page():
+    """Page with ScrollArea demonstration."""
+    page = VStack()
+    page.spacing = 12
+    page.alignment = "left"
+
+    title = Label()
+    title.text = "ScrollArea"
+    title.font_size = 18
+    title.color = (1, 1, 1, 1)
+    page.add_child(title)
+
+    info = Label()
+    info.text = "Scroll with mouse wheel or drag scrollbar:"
+    info.font_size = 13
+    info.color = (0.6, 0.6, 0.6, 1.0)
+    page.add_child(info)
+
+    # ScrollArea wrapping a tall VStack
+    scroll = ScrollArea()
+    scroll.preferred_width = px(380)
+    scroll.preferred_height = px(250)
+
+    content = VStack()
+    content.spacing = 6
+    content.alignment = "left"
+
+    for i in range(30):
+        lbl = Label()
+        lbl.text = f"  Item {i + 1} — scrollable content line"
+        lbl.font_size = 14
+        lbl.color = (0.85, 0.85, 0.9, 1.0)
+        content.add_child(lbl)
+
+    scroll.add_child(content)
+    page.add_child(scroll)
+
+    return page
 
 
 # --- UI ---
@@ -142,103 +259,26 @@ def build_ui(graphics):
     root.padding = 20
 
     layout = VStack()
-    layout.spacing = 12
+    layout.spacing = 16
     layout.alignment = "left"
 
     # Title
     title = Label()
-    title.text = "TreeWidget Demo"
+    title.text = "tcgui Widget Showcase"
     title.font_size = 24
-    title.color = (1.0, 1.0, 1.0, 1.0)
+    title.color = (1, 1, 1, 1)
     layout.add_child(title)
 
-    # Status label
-    status = Label()
-    status.text = "Click a node or use arrow keys"
-    status.font_size = 13
-    status.color = (0.5, 0.5, 0.55, 1.0)
-    layout.add_child(status)
+    # TabView with all demos
+    tabs = TabView()
+    tabs.preferred_width = px(500)
+    tabs.preferred_height = px(400)
 
-    # Tree
-    tree = TreeWidget()
-    tree.preferred_width = px(500)
-    tree.preferred_height = px(380)
-    tree.row_height = 26
-    tree.row_spacing = 1
+    tabs.add_tab("Progress", make_progress_page())
+    tabs.add_tab("Slider", make_slider_page())
+    tabs.add_tab("Scroll", make_scroll_page())
 
-    # -- Build file tree --
-    project = make_icon_node("\u25A0", (0.9, 0.7, 0.3, 1.0), "my-project")
-    project.expanded = True
-
-    # src/
-    src = make_icon_node("\u25A3", (0.5, 0.8, 1.0, 1.0), "src")
-    src.expanded = True
-    src.add_node(make_icon_node("\u25C8", (0.4, 0.75, 0.4, 1.0), "main.py"))
-    src.add_node(make_icon_node("\u25C8", (0.4, 0.75, 0.4, 1.0), "utils.py"))
-    src.add_node(make_icon_node("\u25C8", (0.4, 0.75, 0.4, 1.0), "config.py"))
-
-    # src/widgets/
-    widgets = make_icon_node("\u25A3", (0.5, 0.8, 1.0, 1.0), "widgets")
-    widgets.add_node(make_icon_node("\u25C8", (0.4, 0.75, 0.4, 1.0), "button.py"))
-    widgets.add_node(make_icon_node("\u25C8", (0.4, 0.75, 0.4, 1.0), "label.py"))
-    widgets.add_node(make_icon_node("\u25C8", (0.4, 0.75, 0.4, 1.0), "tree.py"))
-    src.add_node(widgets)
-
-    # tests/
-    tests = make_icon_node("\u25A3", (0.5, 0.8, 1.0, 1.0), "tests")
-    tests.add_node(make_icon_node("\u25C8", (0.7, 0.7, 0.4, 1.0), "test_main.py"))
-    tests.add_node(make_icon_node("\u25C8", (0.7, 0.7, 0.4, 1.0), "test_utils.py"))
-
-    # docs/
-    docs = make_icon_node("\u25A3", (0.5, 0.8, 1.0, 1.0), "docs")
-    docs.add_node(make_icon_node("\u25AB", (0.8, 0.8, 0.8, 1.0), "README.md"))
-    docs.add_node(make_icon_node("\u25AB", (0.8, 0.8, 0.8, 1.0), "CHANGELOG.md"))
-    docs.add_node(make_icon_node("\u25AB", (0.8, 0.8, 0.8, 1.0), "API.md"))
-
-    # Root files
-    gitignore = make_icon_node("\u25CB", (0.6, 0.6, 0.6, 1.0), ".gitignore")
-    setup_py = make_icon_node("\u25C8", (0.4, 0.75, 0.4, 1.0), "setup.py")
-    license_f = make_icon_node("\u25AB", (0.8, 0.8, 0.8, 1.0), "LICENSE")
-
-    project.add_node(src)
-    project.add_node(tests)
-    project.add_node(docs)
-    project.add_node(gitignore)
-    project.add_node(setup_py)
-    project.add_node(license_f)
-
-    tree.add_root(project)
-
-    # Callbacks
-    def on_select(node):
-        # Extract text from content
-        c = node.content
-        if isinstance(c, Label):
-            status.text = f"Selected: {c.text}"
-        elif isinstance(c, HStack) and len(c.children) >= 2:
-            lbl = c.children[1]
-            if isinstance(lbl, Label):
-                status.text = f"Selected: {lbl.text}"
-            else:
-                status.text = "Selected: <node>"
-        else:
-            status.text = "Selected: <node>"
-
-    def on_activate(node):
-        c = node.content
-        name = ""
-        if isinstance(c, Label):
-            name = c.text
-        elif isinstance(c, HStack) and len(c.children) >= 2:
-            lbl = c.children[1]
-            if isinstance(lbl, Label):
-                name = lbl.text
-        status.text = f"Activated: {name}" if name else "Activated: <node>"
-
-    tree.on_select = on_select
-    tree.on_activate = on_activate
-
-    layout.add_child(tree)
+    layout.add_child(tabs)
     root.add_child(layout)
 
     ui = UI(graphics)
@@ -249,7 +289,7 @@ def build_ui(graphics):
 # --- Main ---
 
 def main():
-    window, gl_ctx = create_window("tcgui — Tree Demo", 700, 520)
+    window, gl_ctx = create_window("tcgui — Widget Showcase", 600, 550)
 
     graphics = OpenGLGraphicsBackend.get_instance()
     graphics.ensure_ready()

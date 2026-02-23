@@ -6,9 +6,10 @@ from typing import Type
 import yaml
 
 from tcgui.widgets.widget import Widget
-from tcgui.widgets.containers import HStack, VStack, Panel
-from tcgui.widgets.basic import Label, Button, Checkbox, IconButton, Separator, ImageWidget, TextInput
+from tcgui.widgets.containers import HStack, VStack, Panel, ScrollArea
+from tcgui.widgets.basic import Label, Button, Checkbox, IconButton, Separator, ImageWidget, TextInput, ProgressBar, Slider
 from tcgui.widgets.tree import TreeNode, TreeWidget
+from tcgui.widgets.tabs import TabBar, TabView
 from tcgui.widgets.units import Value
 
 
@@ -20,6 +21,7 @@ class UILoader:
         "HStack": HStack,
         "VStack": VStack,
         "Panel": Panel,
+        "ScrollArea": ScrollArea,
         "Label": Label,
         "Button": Button,
         "Checkbox": Checkbox,
@@ -27,8 +29,12 @@ class UILoader:
         "Separator": Separator,
         "Image": ImageWidget,
         "TextInput": TextInput,
+        "ProgressBar": ProgressBar,
+        "Slider": Slider,
         "TreeNode": TreeNode,
         "TreeWidget": TreeWidget,
+        "TabBar": TabBar,
+        "TabView": TabView,
     }
 
     def __init__(self):
@@ -148,6 +154,19 @@ class UILoader:
                 widget.alignment = data["alignment"]
             if "justify" in data:
                 widget.justify = data["justify"]
+
+        # ScrollArea attributes
+        if isinstance(widget, ScrollArea):
+            if "scroll_speed" in data:
+                widget.scroll_speed = float(data["scroll_speed"])
+            if "show_scrollbar" in data:
+                widget.show_scrollbar = bool(data["show_scrollbar"])
+            if "scrollbar_width" in data:
+                widget.scrollbar_width = float(data["scrollbar_width"])
+            if "scrollbar_color" in data:
+                widget.scrollbar_color = self._parse_color(data["scrollbar_color"])
+            if "scrollbar_hover_color" in data:
+                widget.scrollbar_hover_color = self._parse_color(data["scrollbar_hover_color"])
 
         # Panel attributes
         if isinstance(widget, Panel):
@@ -271,6 +290,48 @@ class UILoader:
             if "border_width" in data:
                 widget.border_width = float(data["border_width"])
 
+        # ProgressBar attributes
+        if isinstance(widget, ProgressBar):
+            if "value" in data:
+                widget.value = float(data["value"])
+            if "background_color" in data:
+                widget.background_color = self._parse_color(data["background_color"])
+            if "fill_color" in data:
+                widget.fill_color = self._parse_color(data["fill_color"])
+            if "border_radius" in data:
+                widget.border_radius = float(data["border_radius"])
+            if "show_text" in data:
+                widget.show_text = bool(data["show_text"])
+            if "text_color" in data:
+                widget.text_color = self._parse_color(data["text_color"])
+            if "font_size" in data:
+                widget.font_size = float(data["font_size"])
+
+        # Slider attributes
+        if isinstance(widget, Slider):
+            if "value" in data:
+                widget.value = float(data["value"])
+            if "min_value" in data:
+                widget.min_value = float(data["min_value"])
+            if "max_value" in data:
+                widget.max_value = float(data["max_value"])
+            if "step" in data:
+                widget.step = float(data["step"])
+            if "track_color" in data:
+                widget.track_color = self._parse_color(data["track_color"])
+            if "fill_color" in data:
+                widget.fill_color = self._parse_color(data["fill_color"])
+            if "thumb_color" in data:
+                widget.thumb_color = self._parse_color(data["thumb_color"])
+            if "thumb_hover_color" in data:
+                widget.thumb_hover_color = self._parse_color(data["thumb_hover_color"])
+            if "track_height" in data:
+                widget.track_height = float(data["track_height"])
+            if "thumb_radius" in data:
+                widget.thumb_radius = float(data["thumb_radius"])
+            if "border_radius" in data:
+                widget.border_radius = float(data["border_radius"])
+
         # ImageWidget attributes
         if isinstance(widget, ImageWidget):
             if "image_path" in data:
@@ -326,6 +387,47 @@ class UILoader:
                     child_node = self._parse_widget(node_data)
                     if isinstance(child_node, TreeNode):
                         widget.add_root(child_node)
+
+        # TabBar attributes
+        if isinstance(widget, TabBar):
+            if "tabs" in data:
+                widget.tabs = list(data["tabs"])
+            if "selected_index" in data:
+                widget.selected_index = int(data["selected_index"])
+            if "tab_padding" in data:
+                widget.tab_padding = float(data["tab_padding"])
+            if "tab_spacing" in data:
+                widget.tab_spacing = float(data["tab_spacing"])
+            if "font_size" in data:
+                widget.font_size = float(data["font_size"])
+            if "tab_color" in data:
+                widget.tab_color = self._parse_color(data["tab_color"])
+            if "selected_tab_color" in data:
+                widget.selected_tab_color = self._parse_color(data["selected_tab_color"])
+            if "hover_tab_color" in data:
+                widget.hover_tab_color = self._parse_color(data["hover_tab_color"])
+            if "text_color" in data:
+                widget.text_color = self._parse_color(data["text_color"])
+            if "selected_text_color" in data:
+                widget.selected_text_color = self._parse_color(data["selected_text_color"])
+            if "indicator_color" in data:
+                widget.indicator_color = self._parse_color(data["indicator_color"])
+            if "indicator_height" in data:
+                widget.indicator_height = float(data["indicator_height"])
+            if "border_radius" in data:
+                widget.border_radius = float(data["border_radius"])
+
+        # TabView attributes
+        if isinstance(widget, TabView):
+            if "tab_position" in data:
+                widget.tab_position = data["tab_position"]
+            if "tabs" in data:
+                # tabs: [{title: "Tab1", content: {type: ...}}, ...]
+                for tab_data in data["tabs"]:
+                    title = tab_data.get("title", "")
+                    if "content" in tab_data:
+                        content = self._parse_widget(tab_data["content"])
+                        widget.add_tab(title, content)
 
     def _parse_color(self, value) -> tuple[float, float, float, float]:
         """Parse a color from various formats."""

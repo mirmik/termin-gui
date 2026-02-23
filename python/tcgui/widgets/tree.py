@@ -319,6 +319,18 @@ class TreeWidget(Widget):
 
     # --- Mouse events ---
 
+    def on_mouse_wheel(self, dx: float, dy: float) -> bool:
+        """Scroll tree view with mouse wheel."""
+        stride = self.row_height + self.row_spacing
+        total_content = len(self._visible_nodes) * stride
+        max_scroll = max(0.0, total_content - self.height)
+        if max_scroll <= 0:
+            return False
+        self._scroll_offset -= dy * 30
+        self._scroll_offset = max(0.0, min(self._scroll_offset, max_scroll))
+        self._layout_nodes()
+        return True
+
     def on_mouse_move(self, x: float, y: float):
         node = self._node_at_y(y)
         if node is not self._hovered_node:

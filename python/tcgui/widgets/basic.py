@@ -655,6 +655,7 @@ class ListWidget(Widget):
         self.on_activate: Callable[[int, dict], None] | None = None
 
         # Internal
+        self._scroll_offset: float = 0.0
         self._hovered_index: int = -1
         self._last_click_index: int = -1
         self._last_click_time: float = 0.0
@@ -677,7 +678,7 @@ class ListWidget(Widget):
         return None
 
     def _index_at(self, y: float) -> int:
-        rel_y = y - self.y
+        rel_y = y - self.y + self._scroll_offset
         stride = self.item_height + self.item_spacing
         if stride <= 0:
             return -1
@@ -711,9 +712,15 @@ class ListWidget(Widget):
             )
             return
 
+        renderer.begin_clip(self.x, self.y, self.width, self.height)
+
         stride = self.item_height + self.item_spacing
         for i, item in enumerate(self._items):
-            iy = self.y + i * stride
+            iy = self.y + i * stride - self._scroll_offset
+
+            # Skip rows outside visible area
+            if iy + self.item_height < self.y or iy > self.y + self.height:
+                continue
 
             # Background
             if i == self.selected_index:
@@ -751,7 +758,23 @@ class ListWidget(Widget):
                     text, tc, self.font_size,
                 )
 
+        renderer.end_clip()
+
     # --- Mouse events ---
+
+    def on_mouse_wheel(self, dx: float, dy: float) -> bool:
+        """Scroll list with mouse wheel."""
+        n = len(self._items)
+        if n == 0:
+            return False
+        stride = self.item_height + self.item_spacing
+        total_content = n * stride
+        max_scroll = max(0.0, total_content - self.height)
+        if max_scroll <= 0:
+            return False
+        self._scroll_offset -= dy * 30
+        self._scroll_offset = max(0.0, min(self._scroll_offset, max_scroll))
+        return True
 
     def on_mouse_move(self, x: float, y: float):
         self._hovered_index = self._index_at(y)
@@ -782,3 +805,166 @@ class ListWidget(Widget):
         if self.on_select:
             self.on_select(idx, self._items[idx])
         return True
+
+
+class ProgressBar(Widget):
+    """Progress bar widget displaying a value between 0.0 and 1.0."""
+
+    def __init__(self):
+        super().__init__()
+        self.value: float = 0.0
+        self.background_color: tuple[float, float, float, float] = (0.2, 0.2, 0.2, 1.0)
+        self.fill_color: tuple[float, float, float, float] = (0.3, 0.6, 0.9, 1.0)
+        self.border_radius: float = 3.0
+        self.show_text: bool = False
+        self.text_color: tuple[float, float, float, float] = (1, 1, 1, 1)
+        self.font_size: float = 12.0
+
+    def compute_size(self, viewport_w: float, viewport_h: float) -> tuple[float, float]:
+        if self.preferred_width and self.preferred_height:
+            return (
+                self.preferred_width.to_pixels(viewport_w),
+                self.preferred_height.to_pixels(viewport_h),
+            )
+        w = self.preferred_width.to_pixels(viewport_w) if self.preferred_width else 200
+        h = self.preferred_height.to_pixels(viewport_h) if self.preferred_height else 20
+        return (w, h)
+
+    def render(self, renderer: 'UIRenderer'):
+        # Background
+        renderer.draw_rect(
+            self.x, self.y, self.width, self.height,
+            self.background_color, self.border_radius
+        )
+
+        # Fill
+        clamped = max(0.0, min(1.0, self.value))
+        fill_w = self.width * clamped
+        if fill_w > 0:
+            renderer.draw_rect(
+                self.x, self.y, fill_w, self.height,
+                self.fill_color, self.border_radius
+            )
+
+        # Optional percentage text
+        if self.show_text:
+            text = f"{int(clamped * 100)}%"
+            renderer.draw_text_centered(
+                self.x + self.width / 2,
+                self.y + self.height / 2,
+                text, self.text_color, self.font_size
+            )
+
+
+class Slider(Widget):
+    """Slider widget for selecting a numeric value from a range."""
+
+    def __init__(self):
+        super().__init__()
+        self.value: float = 0.0
+        self.min_value: float = 0.0
+        self.max_value: float = 1.0
+        self.step: float = 0.0  # 0 = continuous
+
+        self.track_color: tuple[float, float, float, float] = (0.25, 0.25, 0.25, 1.0)
+        self.fill_color: tuple[float, float, float, float] = (0.3, 0.6, 0.9, 1.0)
+        self.thumb_color: tuple[float, float, float, float] = (0.9, 0.9, 0.9, 1.0)
+        self.thumb_hover_color: tuple[float, float, float, float] = (1, 1, 1, 1)
+        self.track_height: float = 4.0
+        self.thumb_radius: float = 8.0
+        self.border_radius: float = 2.0
+
+        # State
+        self._dragging: bool = False
+        self.hovered: bool = False
+
+        # Callback
+        self.on_change: Callable[[float], None] | None = None
+
+    def compute_size(self, viewport_w: float, viewport_h: float) -> tuple[float, float]:
+        if self.preferred_width and self.preferred_height:
+            return (
+                self.preferred_width.to_pixels(viewport_w),
+                self.preferred_height.to_pixels(viewport_h),
+            )
+        w = self.preferred_width.to_pixels(viewport_w) if self.preferred_width else 200
+        h = self.preferred_height.to_pixels(viewport_h) if self.preferred_height else self.thumb_radius * 2
+        return (w, h)
+
+    def _value_to_x(self) -> float:
+        """Convert current value to x position of thumb center."""
+        rng = self.max_value - self.min_value
+        if rng <= 0:
+            return self.x + self.thumb_radius
+        ratio = (self.value - self.min_value) / rng
+        track_start = self.x + self.thumb_radius
+        track_end = self.x + self.width - self.thumb_radius
+        return track_start + ratio * (track_end - track_start)
+
+    def _x_to_value(self, x: float) -> float:
+        """Convert x position to value."""
+        track_start = self.x + self.thumb_radius
+        track_end = self.x + self.width - self.thumb_radius
+        track_len = track_end - track_start
+        if track_len <= 0:
+            return self.min_value
+        ratio = (x - track_start) / track_len
+        ratio = max(0.0, min(1.0, ratio))
+        val = self.min_value + ratio * (self.max_value - self.min_value)
+        if self.step > 0:
+            val = round((val - self.min_value) / self.step) * self.step + self.min_value
+        return max(self.min_value, min(self.max_value, val))
+
+    def render(self, renderer: 'UIRenderer'):
+        cy = self.y + self.height / 2
+        track_y = cy - self.track_height / 2
+
+        # Track background
+        renderer.draw_rect(
+            self.x + self.thumb_radius, track_y,
+            self.width - self.thumb_radius * 2, self.track_height,
+            self.track_color, self.border_radius
+        )
+
+        # Fill up to thumb
+        thumb_x = self._value_to_x()
+        fill_w = thumb_x - (self.x + self.thumb_radius)
+        if fill_w > 0:
+            renderer.draw_rect(
+                self.x + self.thumb_radius, track_y,
+                fill_w, self.track_height,
+                self.fill_color, self.border_radius
+            )
+
+        # Thumb
+        tc = self.thumb_hover_color if (self.hovered or self._dragging) else self.thumb_color
+        renderer.draw_rect(
+            thumb_x - self.thumb_radius, cy - self.thumb_radius,
+            self.thumb_radius * 2, self.thumb_radius * 2,
+            tc, self.thumb_radius
+        )
+
+    def on_mouse_enter(self):
+        self.hovered = True
+
+    def on_mouse_leave(self):
+        self.hovered = False
+
+    def on_mouse_down(self, x: float, y: float) -> bool:
+        self._dragging = True
+        self._set_value_from_x(x)
+        return True
+
+    def on_mouse_move(self, x: float, y: float):
+        if self._dragging:
+            self._set_value_from_x(x)
+
+    def on_mouse_up(self, x: float, y: float):
+        self._dragging = False
+
+    def _set_value_from_x(self, x: float):
+        new_val = self._x_to_value(x)
+        if new_val != self.value:
+            self.value = new_val
+            if self.on_change:
+                self.on_change(self.value)

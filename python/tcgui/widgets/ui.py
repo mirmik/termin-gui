@@ -182,6 +182,26 @@ class UI:
             return self._focused_widget.on_text_input(text)
         return False
 
+    def mouse_wheel(self, dx: float, dy: float, x: float, y: float) -> bool:
+        """
+        Handle mouse wheel event.
+
+        dx/dy: scroll amounts. dy > 0 = scroll up, dy < 0 = scroll down.
+        x, y: mouse position at time of scroll.
+        Returns True if UI consumed the event.
+        Bubbles up through parents until someone handles it.
+        """
+        if not self._root:
+            return False
+
+        widget = self._root.hit_test(x, y)
+        while widget is not None:
+            if widget.on_mouse_wheel(dx, dy):
+                return True
+            widget = widget.parent
+
+        return False
+
     def mouse_down(self, x: float, y: float) -> bool:
         """
         Handle mouse down event.

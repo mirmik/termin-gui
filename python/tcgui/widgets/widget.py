@@ -139,6 +139,10 @@ class Widget:
     def on_mouse_up(self, x: float, y: float):
         pass
 
+    def on_mouse_wheel(self, dx: float, dy: float) -> bool:
+        """Handle mouse wheel. dy > 0 = scroll up, dy < 0 = scroll down. Return True if handled."""
+        return False
+
     # Focus events (override in focusable widgets)
     def on_focus(self):
         pass

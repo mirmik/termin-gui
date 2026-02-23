@@ -66,6 +66,8 @@ _KEY_MAP = {
     sdl2.SDL_SCANCODE_DELETE: Key.DELETE,
     sdl2.SDL_SCANCODE_LEFT: Key.LEFT,
     sdl2.SDL_SCANCODE_RIGHT: Key.RIGHT,
+    sdl2.SDL_SCANCODE_UP: Key.UP,
+    sdl2.SDL_SCANCODE_DOWN: Key.DOWN,
     sdl2.SDL_SCANCODE_HOME: Key.HOME,
     sdl2.SDL_SCANCODE_END: Key.END,
     sdl2.SDL_SCANCODE_RETURN: Key.ENTER,
@@ -176,6 +178,10 @@ def main():
             ui.mouse_down(float(ev.button.x), float(ev.button.y))
         elif t == sdl2.SDL_MOUSEBUTTONUP:
             ui.mouse_up(float(ev.button.x), float(ev.button.y))
+        elif t == sdl2.SDL_MOUSEWHEEL:
+            mx, my = ctypes.c_int(), ctypes.c_int()
+            sdl2.SDL_GetMouseState(ctypes.byref(mx), ctypes.byref(my))
+            ui.mouse_wheel(float(ev.wheel.x), float(ev.wheel.y), float(mx.value), float(my.value))
         elif t == sdl2.SDL_KEYDOWN:
             key = translate_key(ev.key.keysym.scancode)
             mods = translate_mods(sdl2.SDL_GetModState())

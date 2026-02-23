@@ -30,6 +30,7 @@ from tcgui.widgets.status_bar import StatusBar
 from tcgui.widgets.dialog import Dialog
 from tcgui.widgets.message_box import MessageBox, Buttons
 from tcgui.widgets.canvas import Canvas
+from tcgui.widgets.splitter import Splitter
 from tcgui.widgets.color_dialog import ColorDialog
 from tcgui.widgets.shortcuts import ShortcutRegistry
 from tcgui.widgets.renderer import UIRenderer
@@ -48,7 +49,7 @@ __all__ = [
     "TabBar", "TabView",
     "MenuItem", "Menu",
     "MenuBar", "ToolBar", "ToolBarItem", "StatusBar",
-    "Canvas", "ColorDialog",
+    "Canvas", "Splitter", "ColorDialog",
     "Dialog", "MessageBox", "Buttons", "ShortcutRegistry",
     "UIRenderer", "UILoader", "UI",
 ]

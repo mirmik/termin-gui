@@ -46,6 +46,7 @@ class UI:
         # Viewport dimensions
         self._viewport_w: int = 0
         self._viewport_h: int = 0
+        self._needs_layout: bool = True
 
         # Overlay stack (rendered on top of root, receives events first)
         self._overlays: list[_OverlayEntry] = []
@@ -155,6 +156,10 @@ class UI:
     # Layout & rendering
     # ------------------------------------------------------------------
 
+    def request_layout(self):
+        """Mark layout as needing recalculation."""
+        self._needs_layout = True
+
     def layout(self, viewport_w: int, viewport_h: int):
         """Perform layout calculation."""
         self._viewport_w = viewport_w
@@ -196,8 +201,10 @@ class UI:
         if not self._root:
             return
 
-        # Re-layout if viewport changed
-        if viewport_w != self._viewport_w or viewport_h != self._viewport_h:
+        # Re-layout if viewport changed or layout invalidated
+        if (viewport_w != self._viewport_w or viewport_h != self._viewport_h
+                or self._needs_layout):
+            self._needs_layout = False
             self.layout(viewport_w, viewport_h)
 
         # Check tooltip timer

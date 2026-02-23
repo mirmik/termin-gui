@@ -52,6 +52,9 @@ class Widget:
         # Layout stretch: when True, widget fills remaining space in HStack/VStack
         self.stretch: bool = False
 
+        # Clip children rendering to widget bounds
+        self.clip: bool = False
+
         # Cursor: "", "arrow", "cross", "hand", "text", "move"
         self.cursor: str = ""
 
@@ -98,9 +101,13 @@ class Widget:
 
     def render(self, renderer: 'UIRenderer'):
         """Render this widget. Override in subclasses."""
+        if self.clip:
+            renderer.begin_clip(self.x, self.y, self.width, self.height)
         for child in self.children:
             if child.visible:
                 child.render(renderer)
+        if self.clip:
+            renderer.end_clip()
 
     def contains(self, px: float, py: float) -> bool:
         """Check if point (in pixels) is inside this widget."""

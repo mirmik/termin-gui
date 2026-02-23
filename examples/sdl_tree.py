@@ -165,7 +165,7 @@ def build_ui(graphics):
 
     # Status label
     status = Label()
-    status.text = "Click a node or use arrow keys"
+    status.text = "Click a node, use arrow keys, or drag to reorder"
     status.font_size = 13
     status.color = (0.5, 0.5, 0.55, 1.0)
     layout.add_child(status)
@@ -248,6 +248,105 @@ def build_ui(graphics):
 
     tree.on_select = on_select
     tree.on_activate = on_activate
+
+    # --- Drag & drop ---
+    tree.draggable = True
+
+    def _get_node_name(node):
+        c = node.content
+        if isinstance(c, Label):
+            return c.text
+        if isinstance(c, HStack) and len(c.children) >= 2:
+            lbl = c.children[1]
+            if isinstance(lbl, Label):
+                return lbl.text
+        return "<node>"
+
+    def _detach_node(node):
+        """Remove node from its current parent (root list or subnode list)."""
+        for rn in tree.root_nodes:
+            if node in rn.subnodes:
+                rn.remove_node(node)
+                return
+            if _detach_from(rn, node):
+                return
+        if node in tree.root_nodes:
+            tree.remove_root(node)
+
+    def _detach_from(parent, target):
+        for child in parent.subnodes:
+            if target in child.subnodes:
+                child.remove_node(target)
+                return True
+            if _detach_from(child, target):
+                return True
+        return False
+
+    def _find_parent_and_index(target):
+        """Find (parent_subnodes_list, index) for target node."""
+        for i, rn in enumerate(tree.root_nodes):
+            if rn is target:
+                return tree.root_nodes, i
+        def _search(node):
+            for i, child in enumerate(node.subnodes):
+                if child is target:
+                    return node.subnodes, i
+                result = _search(child)
+                if result:
+                    return result
+            return None
+        for rn in tree.root_nodes:
+            result = _search(rn)
+            if result:
+                return result
+        return None
+
+    def _is_descendant_of(node, ancestor):
+        """Check if node is a descendant of ancestor."""
+        def _check(parent):
+            for child in parent.subnodes:
+                if child is node:
+                    return True
+                if _check(child):
+                    return True
+            return False
+        return _check(ancestor)
+
+    def on_drop(dragged, target, position):
+        name = _get_node_name(dragged)
+
+        # Prevent dropping onto self or own descendant
+        if target is dragged:
+            status.text = f"Cannot drop '{name}' onto itself"
+            return
+        if target is not None and _is_descendant_of(target, dragged):
+            status.text = f"Cannot drop '{name}' into its own subtree"
+            return
+
+        _detach_node(dragged)
+        dragged._set_tree_recursive(tree)
+
+        if position == "root" or target is None:
+            tree.root_nodes.append(dragged)
+            status.text = f"Moved '{name}' to root"
+        elif position == "inside":
+            target.subnodes.append(dragged)
+            target.expanded = True
+            status.text = f"Moved '{name}' inside '{_get_node_name(target)}'"
+        elif position in ("above", "below"):
+            loc = _find_parent_and_index(target)
+            if loc:
+                lst, idx = loc
+                insert_idx = idx if position == "above" else idx + 1
+                lst.insert(insert_idx, dragged)
+                status.text = f"Moved '{name}' {position} '{_get_node_name(target)}'"
+            else:
+                tree.root_nodes.append(dragged)
+                status.text = f"Moved '{name}' to root (fallback)"
+
+        tree._dirty = True
+
+    tree.on_drop = on_drop
 
     layout.add_child(tree)
     root.add_child(layout)

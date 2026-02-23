@@ -202,8 +202,10 @@ def build_ui(graphics):
         sel_state["end"] = None
         sel_state["rect"] = None
         if sel_state["active"]:
+            canvas.cursor = "cross"
             status_bar.show_message("Selection mode: drag to select")
         else:
+            canvas.cursor = ""
             status_bar.show_message("Selection mode off")
 
     btn_sel.on_click = toggle_select
@@ -309,6 +311,25 @@ def main():
     graphics.ensure_ready()
 
     ui, canvas = build_ui(graphics)
+
+    # Cursor support
+    _SDL_CURSORS = {
+        "": sdl2.SDL_SYSTEM_CURSOR_ARROW,
+        "arrow": sdl2.SDL_SYSTEM_CURSOR_ARROW,
+        "cross": sdl2.SDL_SYSTEM_CURSOR_CROSSHAIR,
+        "hand": sdl2.SDL_SYSTEM_CURSOR_HAND,
+        "text": sdl2.SDL_SYSTEM_CURSOR_IBEAM,
+        "move": sdl2.SDL_SYSTEM_CURSOR_SIZEALL,
+    }
+    _cursor_cache = {}
+
+    def set_cursor(name):
+        cursor_id = _SDL_CURSORS.get(name, sdl2.SDL_SYSTEM_CURSOR_ARROW)
+        if cursor_id not in _cursor_cache:
+            _cursor_cache[cursor_id] = sdl2.SDL_CreateSystemCursor(cursor_id)
+        sdl2.SDL_SetCursor(_cursor_cache[cursor_id])
+
+    ui.on_cursor_changed = set_cursor
 
     sdl2.SDL_StartTextInput()
     event = sdl2.SDL_Event()

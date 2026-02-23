@@ -257,6 +257,13 @@ class Theme:
         elif cls_name == "Canvas":
             widget.background_color = self.bg_primary
 
+        elif cls_name == "ColorDialog":
+            widget.background_color = self.bg_surface
+            widget.title_background_color = self._with_alpha(self.bg_surface, 1.0)
+            widget.title_text_color = self.text_primary
+            widget.title_font_size = self.font_size + 2
+            widget.border_radius = self.border_radius + 2
+
 
 # Module-level default theme.  Widgets read from this in __init__.
 current_theme: Theme = Theme.dark()

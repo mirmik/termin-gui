@@ -61,6 +61,10 @@ class UI:
         # Global keyboard shortcuts
         self._shortcuts = ShortcutRegistry()
 
+        # Cursor tracking
+        self._current_cursor: str = ""
+        self.on_cursor_changed: Callable[[str], None] | None = None
+
     # ------------------------------------------------------------------
     # Properties
     # ------------------------------------------------------------------
@@ -388,8 +392,25 @@ class UI:
                 hit.on_mouse_enter()
             self._hovered_widget = hit
 
+        # Update cursor based on hovered widget hierarchy
+        self._update_cursor(hit)
+
         if self._hovered_widget:
             self._hovered_widget.on_mouse_move(event)
+
+    def _update_cursor(self, widget: Widget | None):
+        """Walk up widget tree to find cursor, notify if changed."""
+        new_cursor = ""
+        w = widget
+        while w is not None:
+            if w.cursor:
+                new_cursor = w.cursor
+                break
+            w = w.parent
+        if new_cursor != self._current_cursor:
+            self._current_cursor = new_cursor
+            if self.on_cursor_changed:
+                self.on_cursor_changed(new_cursor)
 
     def mouse_down(self, x: float, y: float,
                    button: MouseButton = MouseButton.LEFT) -> bool:

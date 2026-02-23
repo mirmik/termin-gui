@@ -108,6 +108,12 @@ class TreeWidget(Widget):
         self.on_expand: Callable[[TreeNode], None] | None = None
         self.on_collapse: Callable[[TreeNode], None] | None = None
 
+        # Drag & drop
+        self.draggable: bool = False
+        self.on_drop: Callable[[TreeNode, TreeNode | None, str], None] | None = None
+        # on_drop(dragged_node, target_node, position)
+        # position: "above" | "below" | "inside" | "root"
+
         # State
         self.selected_node: TreeNode | None = None
         self._visible_nodes: list[TreeNode] = []
@@ -123,6 +129,14 @@ class TreeWidget(Widget):
         self._last_click_node: TreeNode | None = None
         self._last_click_time: float = 0.0
         self._DOUBLE_CLICK_INTERVAL: float = 0.4
+
+        # Drag & drop internal state
+        self._drag_node: TreeNode | None = None
+        self._drag_start_y: float = 0
+        self._drag_active: bool = False
+        self._drop_target: TreeNode | None = None
+        self._drop_position: str = ""  # "above" | "below" | "inside" | "root"
+        self._DRAG_THRESHOLD: float = 5.0
 
     def add_root(self, node: TreeNode) -> TreeNode:
         """Add a top-level tree node."""
@@ -310,6 +324,30 @@ class TreeWidget(Widget):
             if node._content is not None:
                 node._content.render(renderer)
 
+        # Draw drop indicator
+        if self._drag_active and self._drop_target is not None:
+            target = self._drop_target
+            try:
+                tidx = self._visible_nodes.index(target)
+            except ValueError:
+                tidx = -1
+            if tidx >= 0:
+                t_y = self.y + tidx * stride - self._scroll_offset
+                if self._drop_position in ("above", "below"):
+                    line_y = t_y if self._drop_position == "above" else t_y + self.row_height
+                    renderer.draw_rect(self.x, line_y - 1,
+                                       self.width, 2, _t.accent)
+                elif self._drop_position == "inside":
+                    renderer.draw_rect(self.x, t_y,
+                                       self.width, self.row_height,
+                                       (*_t.accent[:3], 0.2))
+        elif self._drag_active and self._drop_position == "root":
+            # Draw indicator at bottom of all nodes
+            n = len(self._visible_nodes)
+            bottom_y = self.y + n * stride - self._scroll_offset
+            renderer.draw_rect(self.x, bottom_y - 1,
+                               self.width, 2, _t.accent)
+
         renderer.end_clip()
 
     def hit_test(self, px: float, py: float) -> Widget | None:
@@ -334,6 +372,15 @@ class TreeWidget(Widget):
         return True
 
     def on_mouse_move(self, event: MouseEvent):
+        # Drag & drop handling
+        if self.draggable and self._drag_node is not None:
+            if not self._drag_active:
+                if abs(event.y - self._drag_start_y) > self._DRAG_THRESHOLD:
+                    self._drag_active = True
+            if self._drag_active:
+                self._update_drop_target(event.y)
+                return
+
         node = self._node_at_y(event.y)
         if node is not self._hovered_node:
             if self._hovered_node is not None:
@@ -346,6 +393,7 @@ class TreeWidget(Widget):
         if self._hovered_node is not None:
             self._hovered_node._hovered = False
             self._hovered_node = None
+        self._cancel_drag()
 
     def on_mouse_down(self, event: MouseEvent) -> bool:
         node = self._node_at_y(event.y)
@@ -373,7 +421,63 @@ class TreeWidget(Widget):
         self._last_click_node = node
         self._last_click_time = now
         self._select_node(node)
+
+        # Start potential drag
+        if self.draggable:
+            self._drag_node = node
+            self._drag_start_y = event.y
+            self._drag_active = False
+
         return True
+
+    def on_mouse_up(self, event: MouseEvent):
+        if self._drag_active and self._drag_node is not None:
+            if self.on_drop:
+                self.on_drop(self._drag_node, self._drop_target, self._drop_position)
+            self._cancel_drag()
+            return
+        self._cancel_drag()
+
+    # --- Drag & drop helpers ---
+
+    def _update_drop_target(self, mouse_y: float):
+        """Determine drop target and position from mouse Y."""
+        node = self._node_at_y(mouse_y)
+        if node is None or node is self._drag_node:
+            # Past all nodes → root drop
+            self._drop_target = None
+            self._drop_position = "root"
+            return
+
+        # Determine position within the row
+        stride = self.row_height + self.row_spacing
+        try:
+            idx = self._visible_nodes.index(node)
+        except ValueError:
+            self._drop_target = None
+            self._drop_position = "root"
+            return
+
+        row_y = self.y + idx * stride - self._scroll_offset
+        rel_y = mouse_y - row_y
+        quarter = self.row_height / 4
+
+        if rel_y < quarter:
+            self._drop_target = node
+            self._drop_position = "above"
+        elif rel_y > self.row_height - quarter:
+            self._drop_target = node
+            self._drop_position = "below"
+        else:
+            self._drop_target = node
+            self._drop_position = "inside"
+
+    def _cancel_drag(self):
+        """Reset drag state."""
+        self._drag_node = None
+        self._drag_active = False
+        self._drop_target = None
+        self._drop_position = ""
 
     # --- Keyboard events ---
 

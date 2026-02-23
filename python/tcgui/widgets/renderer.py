@@ -270,6 +270,18 @@ class UIRenderer:
 
         self._graphics.draw_ui_textured_quad(vertices)
 
+    def upload_texture(self, data: np.ndarray):
+        """Upload a numpy RGBA array as a GPU texture. Returns a texture handle.
+
+        Parameters
+        ----------
+        data : np.ndarray
+            Shape (H, W, 4) uint8 RGBA.
+        """
+        h, w = data.shape[0], data.shape[1]
+        return self._graphics.create_texture(data, (w, h), channels=4,
+                                             mipmap=False, clamp=True)
+
     def load_image(self, path: str):
         """Load an image file and upload as GPU texture. Returns a texture handle."""
         from PIL import Image

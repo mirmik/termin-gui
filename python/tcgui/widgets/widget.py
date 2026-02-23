@@ -49,6 +49,9 @@ class Widget:
         # Tooltip text (shown on hover after delay)
         self.tooltip: str | None = None
 
+        # Cursor: "", "arrow", "cross", "hand", "text", "move"
+        self.cursor: str = ""
+
         # Context menu (shown on right-click)
         self.context_menu = None  # Menu | None (avoid circular import)
 

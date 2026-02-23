@@ -17,6 +17,7 @@ from tcgui.widgets.status_bar import StatusBar
 from tcgui.widgets.dialog import Dialog
 from tcgui.widgets.message_box import MessageBox
 from tcgui.widgets.canvas import Canvas
+from tcgui.widgets.color_dialog import ColorDialog
 from tcgui.widgets.units import Value
 
 
@@ -54,6 +55,7 @@ class UILoader:
         "TextArea": TextArea,
         "GroupBox": GroupBox,
         "Canvas": Canvas,
+        "ColorDialog": ColorDialog,
     }
 
     def __init__(self):

@@ -29,6 +29,7 @@ from tcgui.widgets.tool_bar import ToolBar, ToolBarItem
 from tcgui.widgets.status_bar import StatusBar
 from tcgui.widgets.dialog import Dialog
 from tcgui.widgets.message_box import MessageBox, Buttons
+from tcgui.widgets.canvas import Canvas
 from tcgui.widgets.shortcuts import ShortcutRegistry
 from tcgui.widgets.renderer import UIRenderer
 from tcgui.widgets.loader import UILoader
@@ -46,6 +47,7 @@ __all__ = [
     "TabBar", "TabView",
     "MenuItem", "Menu",
     "MenuBar", "ToolBar", "ToolBarItem", "StatusBar",
+    "Canvas",
     "Dialog", "MessageBox", "Buttons", "ShortcutRegistry",
     "UIRenderer", "UILoader", "UI",
 ]

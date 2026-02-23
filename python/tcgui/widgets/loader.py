@@ -16,6 +16,7 @@ from tcgui.widgets.tool_bar import ToolBar, ToolBarItem
 from tcgui.widgets.status_bar import StatusBar
 from tcgui.widgets.dialog import Dialog
 from tcgui.widgets.message_box import MessageBox
+from tcgui.widgets.canvas import Canvas
 from tcgui.widgets.units import Value
 
 
@@ -52,6 +53,7 @@ class UILoader:
         "SliderEdit": SliderEdit,
         "TextArea": TextArea,
         "GroupBox": GroupBox,
+        "Canvas": Canvas,
     }
 
     def __init__(self):
@@ -659,6 +661,17 @@ class UILoader:
                 widget.arrow_color = self._parse_color(data["arrow_color"])
             if "border_color" in data:
                 widget.border_color = self._parse_color(data["border_color"])
+
+        # Canvas attributes
+        if isinstance(widget, Canvas):
+            if "background_color" in data:
+                widget.background_color = self._parse_color(data["background_color"])
+            if "min_zoom" in data:
+                widget.min_zoom = float(data["min_zoom"])
+            if "max_zoom" in data:
+                widget.max_zoom = float(data["max_zoom"])
+            if "zoom_factor" in data:
+                widget.zoom_factor = float(data["zoom_factor"])
 
     def _parse_color(self, value) -> tuple[float, float, float, float]:
         """Parse a color from various formats."""

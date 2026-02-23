@@ -230,6 +230,15 @@ class UIRenderer:
 
         self.draw_text(x, y, text, color, font_size)
 
+    def draw_rect_outline(self, x: float, y: float, w: float, h: float,
+                          color: tuple[float, float, float, float],
+                          thickness: float = 1.0):
+        """Draw a rectangle outline (unfilled) at pixel coordinates."""
+        self.draw_rect(x, y, w, thickness, color)                   # top
+        self.draw_rect(x, y + h - thickness, w, thickness, color)   # bottom
+        self.draw_rect(x, y, thickness, h, color)                   # left
+        self.draw_rect(x + w - thickness, y, thickness, h, color)   # right
+
     def draw_image(self, x: float, y: float, w: float, h: float,
                    texture_handle,
                    tint: tuple[float, float, float, float] = (1, 1, 1, 1)):

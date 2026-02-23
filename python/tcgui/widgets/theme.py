@@ -254,6 +254,9 @@ class Theme:
             widget.border_radius = self.border_radius + 2
             widget.message_font_size = self.font_size
 
+        elif cls_name == "Canvas":
+            widget.background_color = self.bg_primary
+
 
 # Module-level default theme.  Widgets read from this in __init__.
 current_theme: Theme = Theme.dark()

@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Callable
 
 from tcgui.widgets.units import Value, px
+from tcgui.widgets.events import MouseEvent, MouseWheelEvent, KeyEvent, TextEvent
 
 
 class Widget:
@@ -45,10 +46,22 @@ class Widget:
         self.enabled: bool = True
         self.focusable: bool = False
 
+        # Tooltip text (shown on hover after delay)
+        self.tooltip: str | None = None
+
+        # Context menu (shown on right-click)
+        self.context_menu = None  # Menu | None (avoid circular import)
+
+        # Back-reference to UI (set automatically when attached to UI tree)
+        self._ui = None  # UI | None
+
     def add_child(self, child: Widget) -> Widget:
         """Add a child widget."""
         child.parent = self
         self.children.append(child)
+        # Propagate _ui reference if we're already in a UI tree
+        if self._ui is not None:
+            self._ui._set_ui_recursive(child)
         return child
 
     def remove_child(self, child: Widget):
@@ -129,18 +142,20 @@ class Widget:
     def on_mouse_leave(self):
         pass
 
-    def on_mouse_down(self, x: float, y: float) -> bool:
-        """Handle mouse down. Return True if handled."""
+    def on_mouse_down(self, event: MouseEvent) -> bool:
+        """Handle mouse button down. Return True if handled."""
         return False
 
-    def on_mouse_move(self, x: float, y: float):
+    def on_mouse_move(self, event: MouseEvent):
+        """Handle mouse move (or drag)."""
         pass
 
-    def on_mouse_up(self, x: float, y: float):
+    def on_mouse_up(self, event: MouseEvent):
+        """Handle mouse button up."""
         pass
 
-    def on_mouse_wheel(self, dx: float, dy: float) -> bool:
-        """Handle mouse wheel. dy > 0 = scroll up, dy < 0 = scroll down. Return True if handled."""
+    def on_mouse_wheel(self, event: MouseWheelEvent) -> bool:
+        """Handle mouse wheel. event.dy > 0 = scroll up. Return True if handled."""
         return False
 
     # Focus events (override in focusable widgets)
@@ -151,10 +166,10 @@ class Widget:
         pass
 
     # Keyboard events (override in focusable widgets)
-    def on_key_down(self, key: int, mods: int) -> bool:
+    def on_key_down(self, event: KeyEvent) -> bool:
         """Handle key down. Return True if handled."""
         return False
 
-    def on_text_input(self, text: str) -> bool:
+    def on_text_input(self, event: TextEvent) -> bool:
         """Handle text input. Return True if handled."""
         return False

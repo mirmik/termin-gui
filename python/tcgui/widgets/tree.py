@@ -6,6 +6,8 @@ import time
 from typing import Any, Callable
 
 from tcgui.widgets.widget import Widget
+from tcgui.widgets.events import MouseEvent, MouseWheelEvent, KeyEvent
+from tcgui.widgets.theme import current_theme as _t
 
 
 class TreeNode(Widget):
@@ -96,9 +98,9 @@ class TreeWidget(Widget):
         self.toggle_font_size: float = 10
 
         # Colors
-        self.selected_background: tuple[float, float, float, float] = (0.2, 0.35, 0.6, 0.9)
-        self.hover_background: tuple[float, float, float, float] = (0.22, 0.22, 0.28, 0.9)
-        self.toggle_color: tuple[float, float, float, float] = (0.7, 0.7, 0.7, 1.0)
+        self.selected_background: tuple[float, float, float, float] = _t.selected
+        self.hover_background: tuple[float, float, float, float] = _t.hover_subtle
+        self.toggle_color: tuple[float, float, float, float] = _t.text_secondary
 
         # Callbacks
         self.on_select: Callable[[TreeNode], None] | None = None
@@ -319,20 +321,20 @@ class TreeWidget(Widget):
 
     # --- Mouse events ---
 
-    def on_mouse_wheel(self, dx: float, dy: float) -> bool:
+    def on_mouse_wheel(self, event: MouseWheelEvent) -> bool:
         """Scroll tree view with mouse wheel."""
         stride = self.row_height + self.row_spacing
         total_content = len(self._visible_nodes) * stride
         max_scroll = max(0.0, total_content - self.height)
         if max_scroll <= 0:
             return False
-        self._scroll_offset -= dy * 30
+        self._scroll_offset -= event.dy * 30
         self._scroll_offset = max(0.0, min(self._scroll_offset, max_scroll))
         self._layout_nodes()
         return True
 
-    def on_mouse_move(self, x: float, y: float):
-        node = self._node_at_y(y)
+    def on_mouse_move(self, event: MouseEvent):
+        node = self._node_at_y(event.y)
         if node is not self._hovered_node:
             if self._hovered_node is not None:
                 self._hovered_node._hovered = False
@@ -345,8 +347,8 @@ class TreeWidget(Widget):
             self._hovered_node._hovered = False
             self._hovered_node = None
 
-    def on_mouse_down(self, x: float, y: float) -> bool:
-        node = self._node_at_y(y)
+    def on_mouse_down(self, event: MouseEvent) -> bool:
+        node = self._node_at_y(event.y)
         if node is None:
             return False
 
@@ -354,7 +356,7 @@ class TreeWidget(Widget):
 
         # Check if click is on the toggle area
         toggle_x = self.x + node._depth * self.indent_size
-        if node.has_subnodes and toggle_x <= x < toggle_x + self.toggle_size:
+        if node.has_subnodes and toggle_x <= event.x < toggle_x + self.toggle_size:
             node.toggle()
             return True
 
@@ -375,12 +377,13 @@ class TreeWidget(Widget):
 
     # --- Keyboard events ---
 
-    def on_key_down(self, key: int, mods: int) -> bool:
+    def on_key_down(self, event: KeyEvent) -> bool:
         from tcbase import Key
 
         if not self._visible_nodes:
             return False
 
+        key = event.key
         if key == Key.DOWN:
             return self._navigate(1)
 

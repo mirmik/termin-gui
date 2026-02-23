@@ -6,10 +6,11 @@ from typing import Type
 import yaml
 
 from tcgui.widgets.widget import Widget
-from tcgui.widgets.containers import HStack, VStack, Panel, ScrollArea
-from tcgui.widgets.basic import Label, Button, Checkbox, IconButton, Separator, ImageWidget, TextInput, ProgressBar, Slider
+from tcgui.widgets.containers import HStack, VStack, Panel, ScrollArea, GroupBox
+from tcgui.widgets.basic import Label, Button, Checkbox, IconButton, Separator, ImageWidget, TextInput, ProgressBar, Slider, ComboBox, SpinBox, SliderEdit, TextArea
 from tcgui.widgets.tree import TreeNode, TreeWidget
 from tcgui.widgets.tabs import TabBar, TabView
+from tcgui.widgets.menu import MenuItem, Menu
 from tcgui.widgets.units import Value
 
 
@@ -31,10 +32,16 @@ class UILoader:
         "TextInput": TextInput,
         "ProgressBar": ProgressBar,
         "Slider": Slider,
+        "ComboBox": ComboBox,
         "TreeNode": TreeNode,
         "TreeWidget": TreeWidget,
         "TabBar": TabBar,
         "TabView": TabView,
+        "Menu": Menu,
+        "SpinBox": SpinBox,
+        "SliderEdit": SliderEdit,
+        "TextArea": TextArea,
+        "GroupBox": GroupBox,
     }
 
     def __init__(self):
@@ -332,6 +339,25 @@ class UILoader:
             if "border_radius" in data:
                 widget.border_radius = float(data["border_radius"])
 
+        # ComboBox attributes
+        if isinstance(widget, ComboBox):
+            if "items" in data:
+                widget.items = list(data["items"])
+            if "selected_index" in data:
+                widget.selected_index = int(data["selected_index"])
+            if "placeholder" in data:
+                widget.placeholder = str(data["placeholder"])
+            if "background_color" in data:
+                widget.background_color = self._parse_color(data["background_color"])
+            if "border_color" in data:
+                widget.border_color = self._parse_color(data["border_color"])
+            if "text_color" in data:
+                widget.text_color = self._parse_color(data["text_color"])
+            if "font_size" in data:
+                widget.font_size = float(data["font_size"])
+            if "border_radius" in data:
+                widget.border_radius = float(data["border_radius"])
+
         # ImageWidget attributes
         if isinstance(widget, ImageWidget):
             if "image_path" in data:
@@ -428,6 +454,135 @@ class UILoader:
                     if "content" in tab_data:
                         content = self._parse_widget(tab_data["content"])
                         widget.add_tab(title, content)
+
+        # Menu attributes
+        if isinstance(widget, Menu):
+            if "background_color" in data:
+                widget.background_color = self._parse_color(data["background_color"])
+            if "item_hover_color" in data:
+                widget.item_hover_color = self._parse_color(data["item_hover_color"])
+            if "text_color" in data:
+                widget.text_color = self._parse_color(data["text_color"])
+            if "shortcut_color" in data:
+                widget.shortcut_color = self._parse_color(data["shortcut_color"])
+            if "icon_color" in data:
+                widget.icon_color = self._parse_color(data["icon_color"])
+            if "separator_color" in data:
+                widget.separator_color = self._parse_color(data["separator_color"])
+            if "border_radius" in data:
+                widget.border_radius = float(data["border_radius"])
+            if "font_size" in data:
+                widget.font_size = float(data["font_size"])
+            if "item_height" in data:
+                widget.item_height = float(data["item_height"])
+            if "items" in data:
+                items = []
+                for item_data in data["items"]:
+                    if isinstance(item_data, str) and item_data == "---":
+                        items.append(MenuItem.sep())
+                    elif isinstance(item_data, dict):
+                        items.append(MenuItem(
+                            label=item_data.get("label", ""),
+                            icon=item_data.get("icon"),
+                            shortcut=item_data.get("shortcut"),
+                            enabled=item_data.get("enabled", True),
+                            separator=item_data.get("separator", False),
+                        ))
+                widget.items = items
+
+        # SpinBox attributes
+        if isinstance(widget, SpinBox):
+            if "value" in data:
+                widget.value = float(data["value"])
+            if "min_value" in data:
+                widget.min_value = float(data["min_value"])
+            if "max_value" in data:
+                widget.max_value = float(data["max_value"])
+            if "step" in data:
+                widget.step = float(data["step"])
+            if "decimals" in data:
+                widget.decimals = int(data["decimals"])
+            if "font_size" in data:
+                widget.font_size = float(data["font_size"])
+            if "padding" in data:
+                widget.padding = float(data["padding"])
+            if "button_width" in data:
+                widget.button_width = float(data["button_width"])
+            if "border_radius" in data:
+                widget.border_radius = float(data["border_radius"])
+            if "border_width" in data:
+                widget.border_width = float(data["border_width"])
+
+        # SliderEdit attributes
+        if isinstance(widget, SliderEdit):
+            if "value" in data:
+                widget.value = float(data["value"])
+            if "min_value" in data:
+                widget.min_value = float(data["min_value"])
+            if "max_value" in data:
+                widget.max_value = float(data["max_value"])
+            if "step" in data:
+                widget.step = float(data["step"])
+            if "decimals" in data:
+                widget.decimals = int(data["decimals"])
+            if "spacing" in data:
+                widget.spacing = float(data["spacing"])
+            if "spinbox_width" in data:
+                widget.spinbox_width = float(data["spinbox_width"])
+
+        # TextArea attributes
+        if isinstance(widget, TextArea):
+            if "text" in data:
+                widget.text = str(data["text"])
+            if "placeholder" in data:
+                widget.placeholder = str(data["placeholder"])
+            if "max_lines" in data:
+                widget.max_lines = int(data["max_lines"])
+            if "read_only" in data:
+                widget.read_only = bool(data["read_only"])
+            if "line_height" in data:
+                widget.line_height = float(data["line_height"])
+            if "font_size" in data:
+                widget.font_size = float(data["font_size"])
+            if "padding" in data:
+                widget.padding = float(data["padding"])
+            if "border_radius" in data:
+                widget.border_radius = float(data["border_radius"])
+            if "border_width" in data:
+                widget.border_width = float(data["border_width"])
+            if "show_scrollbar" in data:
+                widget.show_scrollbar = bool(data["show_scrollbar"])
+            if "scrollbar_width" in data:
+                widget.scrollbar_width = float(data["scrollbar_width"])
+
+        # GroupBox attributes
+        if isinstance(widget, GroupBox):
+            if "title" in data:
+                widget.title = str(data["title"])
+            if "expanded" in data:
+                widget.expanded = bool(data["expanded"])
+            if "title_height" in data:
+                widget.title_height = float(data["title_height"])
+            if "content_padding" in data:
+                widget.content_padding = float(data["content_padding"])
+            if "title_padding" in data:
+                widget.title_padding = float(data["title_padding"])
+            if "font_size" in data:
+                widget.font_size = float(data["font_size"])
+            if "border_radius" in data:
+                widget.border_radius = float(data["border_radius"])
+            if "background_color" in data:
+                widget.background_color = self._parse_color(data["background_color"])
+            if "title_background_color" in data:
+                widget.title_background_color = self._parse_color(data["title_background_color"])
+            if "title_hover_color" in data:
+                widget.title_hover_color = self._parse_color(data["title_hover_color"])
+            if "title_text_color" in data:
+                widget.title_text_color = self._parse_color(data["title_text_color"])
+            if "arrow_color" in data:
+                widget.arrow_color = self._parse_color(data["arrow_color"])
+            if "border_color" in data:
+                widget.border_color = self._parse_color(data["border_color"])
 
     def _parse_color(self, value) -> tuple[float, float, float, float]:
         """Parse a color from various formats."""

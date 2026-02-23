@@ -5,6 +5,8 @@ from __future__ import annotations
 from typing import Callable
 
 from tcgui.widgets.widget import Widget
+from tcgui.widgets.events import MouseEvent
+from tcgui.widgets.theme import current_theme as _t
 
 
 class TabBar(Widget):
@@ -18,14 +20,15 @@ class TabBar(Widget):
         self.tab_spacing: float = 2.0
         self.font_size: float = 14.0
 
-        self.tab_color: tuple[float, float, float, float] = (0.2, 0.2, 0.2, 1.0)
-        self.selected_tab_color: tuple[float, float, float, float] = (0.3, 0.3, 0.35, 1.0)
-        self.hover_tab_color: tuple[float, float, float, float] = (0.25, 0.25, 0.3, 1.0)
-        self.text_color: tuple[float, float, float, float] = (0.7, 0.7, 0.7, 1.0)
-        self.selected_text_color: tuple[float, float, float, float] = (1, 1, 1, 1)
-        self.indicator_color: tuple[float, float, float, float] = (0.3, 0.6, 0.9, 1.0)
+        _bg = _t.bg_surface
+        self.tab_color: tuple[float, float, float, float] = _bg
+        self.selected_tab_color: tuple[float, float, float, float] = _t.hover_subtle
+        self.hover_tab_color: tuple[float, float, float, float] = (_bg[0] + 0.05, _bg[1] + 0.05, _bg[2] + 0.05, _bg[3])
+        self.text_color: tuple[float, float, float, float] = _t.text_secondary
+        self.selected_text_color: tuple[float, float, float, float] = _t.text_primary
+        self.indicator_color: tuple[float, float, float, float] = _t.accent
         self.indicator_height: float = 2.0
-        self.border_radius: float = 4.0
+        self.border_radius: float = _t.border_radius + 1
 
         # State
         self._hovered_index: int = -1
@@ -93,14 +96,14 @@ class TabBar(Widget):
                     self.indicator_color
                 )
 
-    def on_mouse_move(self, x: float, y: float):
-        self._hovered_index = self._index_at(x, y)
+    def on_mouse_move(self, event: MouseEvent):
+        self._hovered_index = self._index_at(event.x, event.y)
 
     def on_mouse_leave(self):
         self._hovered_index = -1
 
-    def on_mouse_down(self, x: float, y: float) -> bool:
-        idx = self._index_at(x, y)
+    def on_mouse_down(self, event: MouseEvent) -> bool:
+        idx = self._index_at(event.x, event.y)
         if idx >= 0 and idx != self.selected_index:
             self.selected_index = idx
             if self.on_change:

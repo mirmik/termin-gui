@@ -12,7 +12,7 @@ import sdl2
 from sdl2 import video
 
 from tgfx import OpenGLGraphicsBackend
-from tcbase import Key
+from tcbase import Key, MouseButton, Mods
 
 from tcgui.widgets.ui import UI
 from tcgui.widgets.basic import Label, Button, TextInput
@@ -92,12 +92,23 @@ def translate_key(scancode: int) -> int:
 def translate_mods(sdl_mods: int) -> int:
     result = 0
     if sdl_mods & (sdl2.KMOD_LSHIFT | sdl2.KMOD_RSHIFT):
-        result |= 0x0001
+        result |= Mods.SHIFT.value
     if sdl_mods & (sdl2.KMOD_LCTRL | sdl2.KMOD_RCTRL):
-        result |= 0x0002
+        result |= Mods.CTRL.value
     if sdl_mods & (sdl2.KMOD_LALT | sdl2.KMOD_RALT):
-        result |= 0x0004
+        result |= Mods.ALT.value
     return result
+
+
+_SDL_BUTTON_MAP = {
+    1: MouseButton.LEFT,
+    2: MouseButton.MIDDLE,
+    3: MouseButton.RIGHT,
+}
+
+
+def translate_button(sdl_button: int) -> MouseButton:
+    return _SDL_BUTTON_MAP.get(sdl_button, MouseButton.LEFT)
 
 
 # --- UI ---
@@ -175,7 +186,7 @@ def main():
         elif t == sdl2.SDL_MOUSEMOTION:
             ui.mouse_move(float(ev.motion.x), float(ev.motion.y))
         elif t == sdl2.SDL_MOUSEBUTTONDOWN:
-            ui.mouse_down(float(ev.button.x), float(ev.button.y))
+            ui.mouse_down(float(ev.button.x), float(ev.button.y), translate_button(ev.button.button))
         elif t == sdl2.SDL_MOUSEBUTTONUP:
             ui.mouse_up(float(ev.button.x), float(ev.button.y))
         elif t == sdl2.SDL_MOUSEWHEEL:

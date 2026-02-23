@@ -11,11 +11,11 @@ import sdl2
 from sdl2 import video
 
 from tgfx import OpenGLGraphicsBackend
-from tcbase import Key
+from tcbase import Key, MouseButton, Mods
 
 from tcgui.widgets.ui import UI
-from tcgui.widgets.basic import Label, Button, ProgressBar, Slider
-from tcgui.widgets.containers import VStack, HStack, Panel, ScrollArea
+from tcgui.widgets.basic import Label, Button, ProgressBar, Slider, SpinBox, SliderEdit, TextArea
+from tcgui.widgets.containers import VStack, HStack, Panel, ScrollArea, GroupBox
 from tcgui.widgets.tabs import TabView
 from tcgui.widgets.units import px, pct
 
@@ -92,12 +92,23 @@ def translate_key(scancode: int) -> int:
 def translate_mods(sdl_mods: int) -> int:
     result = 0
     if sdl_mods & (sdl2.KMOD_LSHIFT | sdl2.KMOD_RSHIFT):
-        result |= 0x0001
+        result |= Mods.SHIFT.value
     if sdl_mods & (sdl2.KMOD_LCTRL | sdl2.KMOD_RCTRL):
-        result |= 0x0002
+        result |= Mods.CTRL.value
     if sdl_mods & (sdl2.KMOD_LALT | sdl2.KMOD_RALT):
-        result |= 0x0004
+        result |= Mods.ALT.value
     return result
+
+
+_SDL_BUTTON_MAP = {
+    1: MouseButton.LEFT,
+    2: MouseButton.MIDDLE,
+    3: MouseButton.RIGHT,
+}
+
+
+def translate_button(sdl_button: int) -> MouseButton:
+    return _SDL_BUTTON_MAP.get(sdl_button, MouseButton.LEFT)
 
 
 # --- Tab pages ---
@@ -249,6 +260,186 @@ def make_scroll_page():
     return page
 
 
+def make_spinbox_page():
+    """Page with SpinBox and SliderEdit widgets."""
+    page = VStack()
+    page.spacing = 14
+    page.alignment = "left"
+
+    title = Label()
+    title.text = "SpinBox & SliderEdit"
+    title.font_size = 18
+    title.color = (1, 1, 1, 1)
+    page.add_child(title)
+
+    # SpinBox: integer
+    lbl1 = Label()
+    lbl1.text = "Integer SpinBox (0-100, step 1):"
+    lbl1.font_size = 13
+    lbl1.color = (0.8, 0.8, 0.8, 1.0)
+    page.add_child(lbl1)
+
+    sb1 = SpinBox()
+    sb1.value = 42
+    sb1.min_value = 0
+    sb1.max_value = 100
+    sb1.step = 1
+    sb1.decimals = 0
+    sb1.preferred_width = px(150)
+    page.add_child(sb1)
+
+    # SpinBox: float
+    lbl2 = Label()
+    lbl2.text = "Float SpinBox (0.0-1.0, step 0.05):"
+    lbl2.font_size = 13
+    lbl2.color = (0.8, 0.8, 0.8, 1.0)
+    page.add_child(lbl2)
+
+    sb2 = SpinBox()
+    sb2.value = 0.5
+    sb2.min_value = 0.0
+    sb2.max_value = 1.0
+    sb2.step = 0.05
+    sb2.decimals = 2
+    sb2.preferred_width = px(150)
+    page.add_child(sb2)
+
+    # SliderEdit
+    lbl3 = Label()
+    lbl3.text = "SliderEdit (0-100):"
+    lbl3.font_size = 13
+    lbl3.color = (0.8, 0.8, 0.8, 1.0)
+    page.add_child(lbl3)
+
+    se = SliderEdit()
+    se.value = 42
+    se.min_value = 0
+    se.max_value = 100
+    se.step = 1
+    se.decimals = 0
+    se.preferred_width = px(380)
+    page.add_child(se)
+
+    # Status label
+    status = Label()
+    status.text = "SpinBox: 42 | SliderEdit: 42"
+    status.font_size = 12
+    status.color = (0.6, 0.6, 0.6, 1.0)
+    page.add_child(status)
+
+    def update_status(*_):
+        status.text = f"SpinBox: {sb1._format_value()} | SliderEdit: {se.value:.0f}"
+
+    sb1.on_change = update_status
+    se.on_change = update_status
+
+    return page
+
+
+def make_textarea_page():
+    """Page with TextArea widget."""
+    page = VStack()
+    page.spacing = 14
+    page.alignment = "left"
+
+    title = Label()
+    title.text = "TextArea"
+    title.font_size = 18
+    title.color = (1, 1, 1, 1)
+    page.add_child(title)
+
+    info = Label()
+    info.text = "Multi-line text editor:"
+    info.font_size = 13
+    info.color = (0.6, 0.6, 0.6, 1.0)
+    page.add_child(info)
+
+    ta = TextArea()
+    ta.preferred_width = px(400)
+    ta.preferred_height = px(200)
+    ta.placeholder = "Type here..."
+    ta.text = "Line 1: Hello, TextArea!\nLine 2: Multi-line editing.\nLine 3: Arrow keys, Enter, Backspace.\nLine 4: Scroll with mouse wheel."
+    page.add_child(ta)
+
+    # Line counter
+    counter = Label()
+    counter.text = f"Lines: {len(ta._lines)} | Chars: {len(ta.text)}"
+    counter.font_size = 12
+    counter.color = (0.6, 0.6, 0.6, 1.0)
+    page.add_child(counter)
+
+    def on_text_change(text):
+        counter.text = f"Lines: {len(ta._lines)} | Chars: {len(text)}"
+
+    ta.on_change = on_text_change
+
+    return page
+
+
+def make_groupbox_page():
+    """Page with GroupBox widgets."""
+    page = VStack()
+    page.spacing = 14
+    page.alignment = "left"
+
+    title = Label()
+    title.text = "GroupBox"
+    title.font_size = 18
+    title.color = (1, 1, 1, 1)
+    page.add_child(title)
+
+    info = Label()
+    info.text = "Collapsible sections (click title to toggle):"
+    info.font_size = 13
+    info.color = (0.6, 0.6, 0.6, 1.0)
+    page.add_child(info)
+
+    # GroupBox 1
+    gb1 = GroupBox()
+    gb1.title = "Model Parameters"
+    gb1.preferred_width = px(400)
+
+    content1 = VStack()
+    content1.spacing = 8
+    content1.alignment = "left"
+    for name, val in [("Learning rate", "0.001"), ("Batch size", "32"), ("Epochs", "100")]:
+        row = HStack()
+        row.spacing = 8
+        row.alignment = "center"
+        lbl = Label()
+        lbl.text = f"{name}:"
+        lbl.font_size = 13
+        lbl.color = (0.8, 0.8, 0.8, 1.0)
+        row.add_child(lbl)
+        val_lbl = Label()
+        val_lbl.text = val
+        val_lbl.font_size = 13
+        val_lbl.color = (0.5, 0.8, 1.0, 1.0)
+        row.add_child(val_lbl)
+        content1.add_child(row)
+    gb1.add_child(content1)
+    page.add_child(gb1)
+
+    # GroupBox 2 (collapsed by default)
+    gb2 = GroupBox()
+    gb2.title = "Advanced Settings"
+    gb2.expanded = False
+    gb2.preferred_width = px(400)
+
+    content2 = VStack()
+    content2.spacing = 8
+    content2.alignment = "left"
+    adv_lbl = Label()
+    adv_lbl.text = "Advanced options would go here."
+    adv_lbl.font_size = 13
+    adv_lbl.color = (0.7, 0.7, 0.7, 1.0)
+    content2.add_child(adv_lbl)
+    gb2.add_child(content2)
+    page.add_child(gb2)
+
+    return page
+
+
 # --- UI ---
 
 def build_ui(graphics):
@@ -271,12 +462,15 @@ def build_ui(graphics):
 
     # TabView with all demos
     tabs = TabView()
-    tabs.preferred_width = px(500)
-    tabs.preferred_height = px(400)
+    tabs.preferred_width = px(550)
+    tabs.preferred_height = px(450)
 
     tabs.add_tab("Progress", make_progress_page())
     tabs.add_tab("Slider", make_slider_page())
     tabs.add_tab("Scroll", make_scroll_page())
+    tabs.add_tab("SpinBox", make_spinbox_page())
+    tabs.add_tab("TextArea", make_textarea_page())
+    tabs.add_tab("GroupBox", make_groupbox_page())
 
     layout.add_child(tabs)
     root.add_child(layout)
@@ -289,7 +483,7 @@ def build_ui(graphics):
 # --- Main ---
 
 def main():
-    window, gl_ctx = create_window("tcgui — Widget Showcase", 600, 550)
+    window, gl_ctx = create_window("tcgui — Widget Showcase", 700, 600)
 
     graphics = OpenGLGraphicsBackend.get_instance()
     graphics.ensure_ready()
@@ -311,7 +505,7 @@ def main():
         elif t == sdl2.SDL_MOUSEMOTION:
             ui.mouse_move(float(ev.motion.x), float(ev.motion.y))
         elif t == sdl2.SDL_MOUSEBUTTONDOWN:
-            ui.mouse_down(float(ev.button.x), float(ev.button.y))
+            ui.mouse_down(float(ev.button.x), float(ev.button.y), translate_button(ev.button.button))
         elif t == sdl2.SDL_MOUSEBUTTONUP:
             ui.mouse_up(float(ev.button.x), float(ev.button.y))
         elif t == sdl2.SDL_MOUSEWHEEL:

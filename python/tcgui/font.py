@@ -91,6 +91,15 @@ class FontTextureAtlas:
 
     def _build_atlas(self):
         chars = [chr(i) for i in range(32, 127)]
+        # Extra Unicode symbols used by widgets (tree toggles, icons, etc.)
+        chars += list(
+            "\u25B6\u25BC\u25B2\u25C0"  # ▶▼▲◀ triangles
+            "\u25A0\u25A1\u25A3\u25AB"  # ■□▣▫ squares
+            "\u25CB\u25CF\u25C8\u25C6"  # ○●◈◆ circles/diamonds
+            "\u2022\u2023\u25E6"        # •‣◦ bullets
+            "\u2713\u2717\u2715"        # ✓✗✕ check/cross
+            "\u25B7\u25BD\u25C1\u25B3"  # ▷▽◁△ hollow triangles
+        )
         padding = 2
 
         ascent, descent = self.font.getmetrics()

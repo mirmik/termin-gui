@@ -8,6 +8,7 @@ import yaml
 from tcgui.widgets.widget import Widget
 from tcgui.widgets.containers import HStack, VStack, Panel
 from tcgui.widgets.basic import Label, Button, Checkbox, IconButton, Separator, ImageWidget, TextInput
+from tcgui.widgets.tree import TreeNode, TreeWidget
 from tcgui.widgets.units import Value
 
 
@@ -26,6 +27,8 @@ class UILoader:
         "Separator": Separator,
         "Image": ImageWidget,
         "TextInput": TextInput,
+        "TreeNode": TreeNode,
+        "TreeWidget": TreeWidget,
     }
 
     def __init__(self):
@@ -285,6 +288,44 @@ class UILoader:
                 widget.thickness = float(data["thickness"])
             if "margin" in data:
                 widget.margin = float(data["margin"])
+
+        # TreeNode attributes
+        if isinstance(widget, TreeNode):
+            if "expanded" in data:
+                widget.expanded = bool(data["expanded"])
+            # TreeNode children in YAML are subnodes, not Widget.children
+            if "nodes" in data:
+                for node_data in data["nodes"]:
+                    child_node = self._parse_widget(node_data)
+                    if isinstance(child_node, TreeNode):
+                        widget.add_node(child_node)
+            # "content" key creates a content widget
+            if "content" in data:
+                content_widget = self._parse_widget(data["content"])
+                widget.content = content_widget
+
+        # TreeWidget attributes
+        if isinstance(widget, TreeWidget):
+            if "indent_size" in data:
+                widget.indent_size = float(data["indent_size"])
+            if "toggle_size" in data:
+                widget.toggle_size = float(data["toggle_size"])
+            if "row_height" in data:
+                widget.row_height = float(data["row_height"])
+            if "row_spacing" in data:
+                widget.row_spacing = float(data["row_spacing"])
+            if "selected_background" in data:
+                widget.selected_background = self._parse_color(data["selected_background"])
+            if "hover_background" in data:
+                widget.hover_background = self._parse_color(data["hover_background"])
+            if "toggle_color" in data:
+                widget.toggle_color = self._parse_color(data["toggle_color"])
+            # TreeWidget children in YAML are root_nodes
+            if "nodes" in data:
+                for node_data in data["nodes"]:
+                    child_node = self._parse_widget(node_data)
+                    if isinstance(child_node, TreeNode):
+                        widget.add_root(child_node)
 
     def _parse_color(self, value) -> tuple[float, float, float, float]:
         """Parse a color from various formats."""

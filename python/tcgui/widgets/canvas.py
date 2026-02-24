@@ -42,6 +42,7 @@ class Canvas(Widget):
         self._overlay_data: np.ndarray | None = None
         self._overlay_texture = None
         self._overlay_dirty: bool = False
+        self._overlay_dirty_rect: tuple[int, int, int, int] | None = None  # (x, y, w, h)
 
         # --- Viewport transform ---
         self._zoom: float = 1.0
@@ -90,6 +91,48 @@ class Canvas(Widget):
         if data is not None:
             data = np.ascontiguousarray(data)
         self._overlay_data = data
+        self._overlay_dirty = True
+        self._overlay_dirty_rect = None  # full upload
+
+    def set_overlay_ref(self, data: np.ndarray | None) -> None:
+        """Set overlay by reference (no copy). Caller must keep buffer alive.
+
+        Use mark_overlay_dirty() for subsequent partial updates.
+        """
+        self._overlay_data = data
+        self._overlay_dirty = True
+        self._overlay_dirty_rect = None  # full upload on first set
+
+    def mark_overlay_dirty(self, x0: int, y0: int, x1: int, y1: int) -> None:
+        """Mark a region of the overlay as needing GPU re-upload.
+
+        Coordinates are in image pixels: (x0, y0) top-left, (x1, y1) bottom-right.
+        """
+        if self._overlay_data is None:
+            return
+        h, w = self._overlay_data.shape[:2]
+        x0 = max(0, x0)
+        y0 = max(0, y0)
+        x1 = min(w, x1)
+        y1 = min(h, y1)
+        if x1 <= x0 or y1 <= y0:
+            return
+        rw, rh = x1 - x0, y1 - y0
+        new_rect = (x0, y0, rw, rh)
+
+        if self._overlay_dirty and self._overlay_dirty_rect is None:
+            return  # already marked for full upload
+
+        if self._overlay_dirty and self._overlay_dirty_rect is not None:
+            # union with existing
+            ox, oy, ow, oh = self._overlay_dirty_rect
+            ux = min(ox, x0)
+            uy = min(oy, y0)
+            uw = max(ox + ow, x0 + rw) - ux
+            uh = max(oy + oh, y0 + rh) - uy
+            self._overlay_dirty_rect = (ux, uy, uw, uh)
+        else:
+            self._overlay_dirty_rect = new_rect
         self._overlay_dirty = True
 
     @property
@@ -198,6 +241,8 @@ class Canvas(Widget):
 
         if self._overlay_dirty:
             self._overlay_dirty = False
+            dirty_rect = self._overlay_dirty_rect
+            self._overlay_dirty_rect = None
             if self._overlay_data is None:
                 if self._overlay_texture is not None:
                     self._overlay_texture.delete()
@@ -207,8 +252,15 @@ class Canvas(Widget):
                 if (self._overlay_texture is not None
                         and self._overlay_texture.get_width() == w
                         and self._overlay_texture.get_height() == h):
-                    graphics.update_texture(
-                        self._overlay_texture, self._overlay_data, w, h, 4)
+                    if (dirty_rect is not None
+                            and hasattr(graphics, 'update_texture_region')):
+                        rx, ry, rw, rh = dirty_rect
+                        graphics.update_texture_region(
+                            self._overlay_texture, self._overlay_data,
+                            rx, ry, rw, rh, 4)
+                    else:
+                        graphics.update_texture(
+                            self._overlay_texture, self._overlay_data, w, h, 4)
                 else:
                     if self._overlay_texture is not None:
                         self._overlay_texture.delete()

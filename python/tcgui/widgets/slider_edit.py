@@ -83,7 +83,9 @@ class SliderEdit(Widget):
                 self.preferred_height.to_pixels(viewport_h)
             )
         w = self.preferred_width.to_pixels(viewport_w) if self.preferred_width else 300
-        h = self._slider.compute_size(viewport_w, viewport_h)[1]
+        slider_h = self._slider.compute_size(viewport_w, viewport_h)[1]
+        spinbox_h = self._spinbox.compute_size(viewport_w, viewport_h)[1]
+        h = max(slider_h, spinbox_h)
         return (w, h)
 
     def layout(self, x: float, y: float, width: float, height: float,

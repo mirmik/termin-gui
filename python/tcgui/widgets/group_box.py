@@ -17,12 +17,13 @@ class GroupBox(Widget):
         self.expanded: bool = True
         self.title_height: float = 28
         self.content_padding: float = 8
+        self.spacing: float = _t.spacing
         self.title_padding: float = 8
         self.font_size: float = _t.font_size
         self.border_radius: float = _t.border_radius
 
         # Colors
-        self.background_color: tuple[float, float, float, float] = _t.bg_surface
+        self.background_color: tuple[float, float, float, float] = _t.bg_group
         self.title_background_color: tuple[float, float, float, float] = _t.bg_surface
         self.title_hover_color: tuple[float, float, float, float] = _t.hover_subtle
         self.title_text_color: tuple[float, float, float, float] = _t.text_primary
@@ -44,11 +45,15 @@ class GroupBox(Widget):
             return (w, self.title_height)
 
         child_h = 0.0
+        visible_count = 0
         for child in self.children:
             if not child.visible:
                 continue
             _, ch = child.compute_size(viewport_w, viewport_h)
             child_h += ch
+            visible_count += 1
+        if visible_count > 1:
+            child_h += self.spacing * (visible_count - 1)
         h = self.title_height + child_h + self.content_padding * 2
 
         if self.preferred_height:
@@ -73,7 +78,7 @@ class GroupBox(Widget):
                 continue
             _, ch = child.compute_size(viewport_w, viewport_h)
             child.layout(cx, cy, cw, ch, viewport_w, viewport_h)
-            cy += ch
+            cy += ch + self.spacing
 
     def render(self, renderer: 'UIRenderer'):
         # Border
@@ -138,6 +143,8 @@ class GroupBox(Widget):
     def on_mouse_down(self, event: MouseEvent) -> bool:
         if event.y < self.y + self.title_height:
             self.expanded = not self.expanded
+            if self._ui is not None:
+                self._ui.request_layout()
             if self.on_toggle:
                 self.on_toggle(self.expanded)
             return True

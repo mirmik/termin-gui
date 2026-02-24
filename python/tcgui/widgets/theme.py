@@ -17,6 +17,7 @@ class Theme:
         # --- Backgrounds ---
         self.bg_primary: tuple = (0.12, 0.12, 0.14, 1.0)
         self.bg_surface: tuple = (0.2, 0.2, 0.2, 1.0)
+        self.bg_group: tuple = (0.15, 0.15, 0.17, 1.0)
         self.bg_input: tuple = (0.15, 0.15, 0.15, 1.0)
         self.bg_input_focus: tuple = (0.18, 0.18, 0.22, 1.0)
 
@@ -196,7 +197,7 @@ class Theme:
             widget.border_radius = self.border_radius
 
         elif cls_name == "GroupBox":
-            widget.background_color = self.bg_surface
+            widget.background_color = self.bg_group
             widget.title_background_color = self.bg_surface
             widget.title_hover_color = self.hover_subtle
             widget.title_text_color = self.text_primary

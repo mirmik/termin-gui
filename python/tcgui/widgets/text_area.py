@@ -1,4 +1,4 @@
-"""TextArea widget."""
+"""TextArea widget with word wrap support."""
 
 from __future__ import annotations
 import time
@@ -10,7 +10,7 @@ from tcgui.widgets.theme import current_theme as _t
 
 
 class TextArea(Widget):
-    """Multi-line text editor with scrollbar."""
+    """Multi-line text editor with scrollbar and word wrap."""
 
     def __init__(self):
         super().__init__()
@@ -23,6 +23,7 @@ class TextArea(Widget):
         self.cursor_col: int = 0
         self.max_lines: int = 0  # 0 = unlimited
         self.read_only: bool = False
+        self.word_wrap: bool = True
 
         # Visual configuration
         self.font_size: float = _t.font_size
@@ -59,6 +60,12 @@ class TextArea(Widget):
         self._drag_start_scroll: float = 0.0
         self._renderer: 'UIRenderer | None' = None
 
+        # Visual line cache for word wrap.
+        # Each entry: (logical_line_idx, start_col, end_col)
+        self._vlines: list[tuple[int, int, int]] = []
+        self._vlines_content_w: float = -1
+        self._last_content_w: float = 0
+
         # Callback
         self.on_changed: Callable[[str], None] | None = None
 
@@ -73,6 +80,80 @@ class TextArea(Widget):
         self._lines = value.split("\n") if value else [""]
         self.cursor_line = min(self.cursor_line, len(self._lines) - 1)
         self.cursor_col = min(self.cursor_col, len(self._lines[self.cursor_line]))
+        self._invalidate_vlines()
+
+    # --- Word wrap ---
+
+    def _invalidate_vlines(self):
+        self._vlines_content_w = -1
+
+    def _wrap_line(self, renderer, text: str, max_width: float) -> list[tuple[int, int]]:
+        """Split *text* into (start_col, end_col) segments fitting *max_width*."""
+        if not text:
+            return [(0, 0)]
+        if max_width <= 0 or self._measure_text_width(renderer, text) <= max_width:
+            return [(0, len(text))]
+
+        segments: list[tuple[int, int]] = []
+        start = 0
+        while start < len(text):
+            if self._measure_text_width(renderer, text[start:]) <= max_width:
+                segments.append((start, len(text)))
+                break
+
+            # Find the furthest char that still fits.
+            fit = start
+            for i in range(start + 1, len(text) + 1):
+                if self._measure_text_width(renderer, text[start:i]) > max_width:
+                    break
+                fit = i
+
+            if fit <= start:
+                fit = start + 1  # force at least 1 char
+
+            # Prefer breaking at a word boundary.
+            break_at = fit
+            space_pos = text.rfind(' ', start, fit)
+            if space_pos > start:
+                break_at = space_pos + 1  # break after space
+
+            segments.append((start, break_at))
+            start = break_at
+
+        return segments
+
+    def _ensure_vlines(self, renderer, content_w: float):
+        """Recompute visual lines if cache is stale."""
+        if self._vlines_content_w == content_w:
+            return
+        self._vlines = []
+        if not self.word_wrap:
+            for i, line in enumerate(self._lines):
+                self._vlines.append((i, 0, len(line)))
+        else:
+            for i, line in enumerate(self._lines):
+                for sc, ec in self._wrap_line(renderer, line, content_w):
+                    self._vlines.append((i, sc, ec))
+        self._vlines_content_w = content_w
+
+    def _cursor_visual_row(self) -> int:
+        """Return the visual-row index where the cursor sits."""
+        for vi, (li, sc, ec) in enumerate(self._vlines):
+            if li == self.cursor_line and sc <= self.cursor_col <= ec:
+                # At segment boundary → prefer the start of next segment.
+                if (self.cursor_col == ec
+                        and vi + 1 < len(self._vlines)
+                        and self._vlines[vi + 1][0] == li):
+                    continue
+                return vi
+        return max(0, len(self._vlines) - 1)
+
+    def _refresh_vlines_if_possible(self):
+        """Eagerly recompute vlines when renderer and dimensions are known."""
+        if not self.word_wrap or self._renderer is None or self.width <= 0:
+            return
+        if self._last_content_w > 0:
+            self._ensure_vlines(self._renderer, self._last_content_w)
 
     # --- Helpers ---
 
@@ -80,6 +161,8 @@ class TextArea(Widget):
         return self.line_height if self.line_height > 0 else self.font_size * 1.4
 
     def _content_height(self) -> float:
+        if self.word_wrap and self._vlines:
+            return len(self._vlines) * self._effective_line_height()
         return len(self._lines) * self._effective_line_height()
 
     def _visible_height(self) -> float:
@@ -91,7 +174,11 @@ class TextArea(Widget):
 
     def _ensure_cursor_visible(self):
         lh = self._effective_line_height()
-        cursor_top = self.cursor_line * lh
+        if self.word_wrap and self._vlines and self._vlines_content_w > 0:
+            vrow = self._cursor_visual_row()
+            cursor_top = vrow * lh
+        else:
+            cursor_top = self.cursor_line * lh
         cursor_bottom = cursor_top + lh
         visible_h = self._visible_height()
         if cursor_top < self._scroll_y:
@@ -110,6 +197,24 @@ class TextArea(Widget):
         content_y = self.y + self.padding + bw
         lh = self._effective_line_height()
 
+        if self.word_wrap and self._vlines:
+            rel_y = y - content_y + self._scroll_y
+            vrow = int(rel_y / lh)
+            vrow = max(0, min(vrow, len(self._vlines) - 1))
+            li, sc, ec = self._vlines[vrow]
+
+            rel_x = x - content_x
+            segment_text = self._lines[li][sc:ec]
+            col = ec
+            x_acc = 0.0
+            for i, ch in enumerate(segment_text):
+                char_w = self._measure_text_width(renderer, ch)
+                if rel_x < x_acc + char_w / 2:
+                    col = sc + i
+                    break
+                x_acc += char_w
+            return li, col
+
         rel_y = y - content_y + self._scroll_y
         line = int(rel_y / lh)
         line = max(0, min(line, len(self._lines) - 1))
@@ -124,7 +229,6 @@ class TextArea(Widget):
                 col = i
                 break
             x_acc += char_w
-
         return line, col
 
     # --- Cursor blink ---
@@ -175,10 +279,20 @@ class TextArea(Widget):
         content_w = self.width - (self.padding + bw) * 2
         content_h = self._visible_height()
 
-        # Reduce content width for scrollbar
-        has_scrollbar = self.show_scrollbar and self._content_height() > content_h
-        if has_scrollbar:
-            content_w -= self.scrollbar_width
+        # Determine scrollbar and compute visual lines for word wrap.
+        if self.word_wrap:
+            self._ensure_vlines(renderer, content_w)
+            has_scrollbar = self.show_scrollbar and self._content_height() > content_h
+            if has_scrollbar:
+                content_w -= self.scrollbar_width
+                self._ensure_vlines(renderer, content_w)
+                has_scrollbar = self.show_scrollbar and self._content_height() > content_h
+        else:
+            has_scrollbar = self.show_scrollbar and self._content_height() > content_h
+            if has_scrollbar:
+                content_w -= self.scrollbar_width
+
+        self._last_content_w = content_w
 
         renderer.begin_clip(content_x, content_y, content_w, content_h)
 
@@ -189,8 +303,19 @@ class TextArea(Widget):
                     content_x, content_y + self.font_size,
                     self.placeholder, self.placeholder_color, self.font_size
                 )
+        elif self.word_wrap and self._vlines:
+            # Draw wrapped visual lines.
+            first_row = max(0, int(self._scroll_y / lh))
+            last_row = min(len(self._vlines), int((self._scroll_y + content_h) / lh) + 1)
+            for vi in range(first_row, last_row):
+                li, sc, ec = self._vlines[vi]
+                row_y = content_y + vi * lh - self._scroll_y + self.font_size
+                renderer.draw_text(
+                    content_x, row_y,
+                    self._lines[li][sc:ec], self.text_color, self.font_size
+                )
         else:
-            # Draw visible lines
+            # Draw unwrapped lines.
             first_line = max(0, int(self._scroll_y / lh))
             last_line = min(len(self._lines), int((self._scroll_y + content_h) / lh) + 1)
             for i in range(first_line, last_line):
@@ -204,9 +329,18 @@ class TextArea(Widget):
         if self.focused:
             self._update_cursor_blink()
             if self._cursor_visible:
-                cursor_x_px = self._measure_text_width(renderer, self._lines[self.cursor_line][:self.cursor_col])
-                cx = content_x + cursor_x_px - self._scroll_x
-                cy = content_y + self.cursor_line * lh - self._scroll_y
+                if self.word_wrap and self._vlines:
+                    vrow = self._cursor_visual_row()
+                    li, sc, _ec = self._vlines[vrow]
+                    cursor_x_px = self._measure_text_width(
+                        renderer, self._lines[li][sc:self.cursor_col])
+                    cx = content_x + cursor_x_px
+                    cy = content_y + vrow * lh - self._scroll_y
+                else:
+                    cursor_x_px = self._measure_text_width(
+                        renderer, self._lines[self.cursor_line][:self.cursor_col])
+                    cx = content_x + cursor_x_px - self._scroll_x
+                    cy = content_y + self.cursor_line * lh - self._scroll_y
                 renderer.draw_rect(cx, cy, 1.5, lh, self.cursor_color)
 
         renderer.end_clip()
@@ -318,7 +452,15 @@ class TextArea(Widget):
             return True
 
         if key == Key.UP:
-            if self.cursor_line > 0:
+            if self.word_wrap and self._vlines:
+                vrow = self._cursor_visual_row()
+                if vrow > 0:
+                    cur_li, cur_sc, _cur_ec = self._vlines[vrow]
+                    offset = self.cursor_col - cur_sc
+                    prev_li, prev_sc, prev_ec = self._vlines[vrow - 1]
+                    self.cursor_line = prev_li
+                    self.cursor_col = min(prev_sc + offset, prev_ec)
+            elif self.cursor_line > 0:
                 self.cursor_line -= 1
                 self.cursor_col = min(self.cursor_col, len(self._lines[self.cursor_line]))
             self._reset_cursor_blink()
@@ -326,7 +468,15 @@ class TextArea(Widget):
             return True
 
         if key == Key.DOWN:
-            if self.cursor_line < len(self._lines) - 1:
+            if self.word_wrap and self._vlines:
+                vrow = self._cursor_visual_row()
+                if vrow < len(self._vlines) - 1:
+                    cur_li, cur_sc, _cur_ec = self._vlines[vrow]
+                    offset = self.cursor_col - cur_sc
+                    next_li, next_sc, next_ec = self._vlines[vrow + 1]
+                    self.cursor_line = next_li
+                    self.cursor_col = min(next_sc + offset, next_ec)
+            elif self.cursor_line < len(self._lines) - 1:
                 self.cursor_line += 1
                 self.cursor_col = min(self.cursor_col, len(self._lines[self.cursor_line]))
             self._reset_cursor_blink()
@@ -334,13 +484,23 @@ class TextArea(Widget):
             return True
 
         if key == Key.HOME:
-            self.cursor_col = 0
+            if self.word_wrap and self._vlines:
+                vrow = self._cursor_visual_row()
+                _li, sc, _ec = self._vlines[vrow]
+                self.cursor_col = sc
+            else:
+                self.cursor_col = 0
             self._reset_cursor_blink()
             self._ensure_cursor_visible()
             return True
 
         if key == Key.END:
-            self.cursor_col = len(self._lines[self.cursor_line])
+            if self.word_wrap and self._vlines:
+                vrow = self._cursor_visual_row()
+                _li, _sc, ec = self._vlines[vrow]
+                self.cursor_col = ec
+            else:
+                self.cursor_col = len(self._lines[self.cursor_line])
             self._reset_cursor_blink()
             self._ensure_cursor_visible()
             return True
@@ -353,6 +513,8 @@ class TextArea(Widget):
             self._lines.insert(self.cursor_line + 1, line[self.cursor_col:])
             self.cursor_line += 1
             self.cursor_col = 0
+            self._invalidate_vlines()
+            self._refresh_vlines_if_possible()
             self._fire_on_change()
             self._reset_cursor_blink()
             self._ensure_cursor_visible()
@@ -363,6 +525,8 @@ class TextArea(Widget):
                 line = self._lines[self.cursor_line]
                 self._lines[self.cursor_line] = line[:self.cursor_col - 1] + line[self.cursor_col:]
                 self.cursor_col -= 1
+                self._invalidate_vlines()
+                self._refresh_vlines_if_possible()
                 self._fire_on_change()
             elif self.cursor_line > 0:
                 # Merge with previous line
@@ -371,6 +535,8 @@ class TextArea(Widget):
                 del self._lines[self.cursor_line]
                 self.cursor_line -= 1
                 self.cursor_col = prev_len
+                self._invalidate_vlines()
+                self._refresh_vlines_if_possible()
                 self._fire_on_change()
             self._reset_cursor_blink()
             self._ensure_cursor_visible()
@@ -380,11 +546,15 @@ class TextArea(Widget):
             line = self._lines[self.cursor_line]
             if self.cursor_col < len(line):
                 self._lines[self.cursor_line] = line[:self.cursor_col] + line[self.cursor_col + 1:]
+                self._invalidate_vlines()
+                self._refresh_vlines_if_possible()
                 self._fire_on_change()
             elif self.cursor_line < len(self._lines) - 1:
                 # Merge with next line
                 self._lines[self.cursor_line] += self._lines[self.cursor_line + 1]
                 del self._lines[self.cursor_line + 1]
+                self._invalidate_vlines()
+                self._refresh_vlines_if_possible()
                 self._fire_on_change()
             self._reset_cursor_blink()
             self._ensure_cursor_visible()
@@ -398,6 +568,8 @@ class TextArea(Widget):
         line = self._lines[self.cursor_line]
         self._lines[self.cursor_line] = line[:self.cursor_col] + event.text + line[self.cursor_col:]
         self.cursor_col += len(event.text)
+        self._invalidate_vlines()
+        self._refresh_vlines_if_possible()
         self._fire_on_change()
         self._reset_cursor_blink()
         self._ensure_cursor_visible()

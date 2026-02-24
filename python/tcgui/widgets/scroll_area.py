@@ -57,9 +57,12 @@ class ScrollArea(Widget):
 
         if self.children:
             content = self.children[0]
-            cw, ch = content.compute_size(viewport_w, viewport_h)
-            self._content_w = cw
-            self._content_h = ch
+            # Compute content size using scroll area dimensions as reference,
+            # so that relative units (pct/ndc) resolve relative to the
+            # scroll area, not the full window viewport.
+            cw, ch = content.compute_size(width, height)
+            self._content_w = max(cw, width)
+            self._content_h = max(ch, height)
 
             # Clamp scroll
             self.scroll_y = max(0.0, min(self.scroll_y, self._max_scroll_y))
@@ -68,8 +71,8 @@ class ScrollArea(Widget):
             content.layout(
                 x - self.scroll_x,
                 y - self.scroll_y,
-                max(cw, width),
-                max(ch, height),
+                width,
+                self._content_h,
                 viewport_w, viewport_h,
             )
 
@@ -160,11 +163,13 @@ class ScrollArea(Widget):
         """Re-position content after scroll change."""
         if self.children:
             content = self.children[0]
-            cw, ch = content.compute_size(self._viewport_w, self._viewport_h)
+            cw, ch = content.compute_size(self.width, self.height)
+            self._content_w = max(cw, self.width)
+            self._content_h = max(ch, self.height)
             content.layout(
                 self.x - self.scroll_x,
                 self.y - self.scroll_y,
-                max(cw, self.width),
-                max(ch, self.height),
+                self.width,
+                self._content_h,
                 self._viewport_w, self._viewport_h,
             )

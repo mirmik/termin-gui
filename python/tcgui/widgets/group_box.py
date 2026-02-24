@@ -44,9 +44,11 @@ class GroupBox(Widget):
             return (w, self.title_height)
 
         child_h = 0.0
-        if self.children:
-            _, ch = self.children[0].compute_size(viewport_w, viewport_h)
-            child_h = ch
+        for child in self.children:
+            if not child.visible:
+                continue
+            _, ch = child.compute_size(viewport_w, viewport_h)
+            child_h += ch
         h = self.title_height + child_h + self.content_padding * 2
 
         if self.preferred_height:
@@ -63,13 +65,15 @@ class GroupBox(Widget):
         self._viewport_w = viewport_w
         self._viewport_h = viewport_h
 
-        if self.children:
-            child = self.children[0]
-            cx = x + self.content_padding
-            cy = y + self.title_height + self.content_padding
-            cw = width - self.content_padding * 2
+        cx = x + self.content_padding
+        cy = y + self.title_height + self.content_padding
+        cw = width - self.content_padding * 2
+        for child in self.children:
+            if not child.visible:
+                continue
             _, ch = child.compute_size(viewport_w, viewport_h)
             child.layout(cx, cy, cw, ch, viewport_w, viewport_h)
+            cy += ch
 
     def render(self, renderer: 'UIRenderer'):
         # Border

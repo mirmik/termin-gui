@@ -254,13 +254,22 @@ class Menu(Widget):
         if event.button != MouseButton.LEFT:
             return True  # consume but ignore non-left clicks
         idx = self._index_at(event.y)
+        callback = None
         if 0 <= idx < len(self.items):
             it = self.items[idx]
             if it.enabled and it.on_click:
-                it.on_click()
-        # Close the menu after any click
-        if self._ui is not None:
-            self._ui.hide_overlay(self)
+                callback = it.on_click
+        # Close the menu first, then defer the callback so it runs
+        # outside event dispatch.  This prevents blocking callbacks
+        # (e.g. native file dialogs) from corrupting SDL mouse state.
+        ui = self._ui
+        if ui is not None:
+            ui.hide_overlay(self)
+        if callback is not None:
+            if ui is not None:
+                ui.defer(callback)
+            else:
+                callback()
         return True
 
     def hit_test(self, px: float, py: float):
@@ -285,12 +294,19 @@ class Menu(Widget):
             self._move_hover(1)
             return True
         if key == Key.ENTER:
+            callback = None
             if 0 <= self._hovered_index < len(self.items):
                 it = self.items[self._hovered_index]
                 if it.enabled and it.on_click:
-                    it.on_click()
-            if self._ui is not None:
-                self._ui.hide_overlay(self)
+                    callback = it.on_click
+            ui = self._ui
+            if ui is not None:
+                ui.hide_overlay(self)
+            if callback is not None:
+                if ui is not None:
+                    ui.defer(callback)
+                else:
+                    callback()
             return True
         return False
 

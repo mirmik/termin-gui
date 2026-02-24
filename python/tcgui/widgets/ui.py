@@ -62,6 +62,9 @@ class UI:
         # Global keyboard shortcuts
         self._shortcuts = ShortcutRegistry()
 
+        # Deferred actions (run after event dispatch completes)
+        self._deferred_actions: list[Callable[[], None]] = []
+
         # Cursor tracking
         self._current_cursor: str = ""
         self.on_cursor_changed: Callable[[str], None] | None = None
@@ -155,6 +158,21 @@ class UI:
     # ------------------------------------------------------------------
     # Layout & rendering
     # ------------------------------------------------------------------
+
+    def defer(self, callback: 'Callable[[], None]'):
+        """Schedule *callback* to run after current event dispatch completes.
+
+        Use this when a widget callback may block the event loop (e.g.
+        opening a native file dialog).  The deferred action runs outside
+        event dispatch so SDL mouse state stays consistent.
+        """
+        self._deferred_actions.append(callback)
+
+    def process_deferred(self):
+        """Execute and clear all deferred actions."""
+        while self._deferred_actions:
+            action = self._deferred_actions.pop(0)
+            action()
 
     def request_layout(self):
         """Mark layout as needing recalculation."""

@@ -18,6 +18,19 @@ class MouseEvent:
     x: float
     y: float
     button: MouseButton = MouseButton.LEFT
+    mods: int = 0  # bitmask of Mods values
+
+    @property
+    def shift(self) -> bool:
+        return bool(self.mods & Mods.SHIFT.value)
+
+    @property
+    def ctrl(self) -> bool:
+        return bool(self.mods & Mods.CTRL.value)
+
+    @property
+    def alt(self) -> bool:
+        return bool(self.mods & Mods.ALT.value)
 
 
 @dataclass(frozen=True, slots=True)

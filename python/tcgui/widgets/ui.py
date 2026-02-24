@@ -420,12 +420,13 @@ class UI:
                 self.on_cursor_changed(new_cursor)
 
     def mouse_down(self, x: float, y: float,
-                   button: MouseButton = MouseButton.LEFT) -> bool:
+                   button: MouseButton = MouseButton.LEFT,
+                   mods: int = 0) -> bool:
         """Handle mouse down event."""
         if not self._root:
             return False
 
-        event = MouseEvent(x, y, button)
+        event = MouseEvent(x, y, button, mods)
 
         # --- Overlays first (top to bottom) ---
         for entry in reversed(self._overlays):

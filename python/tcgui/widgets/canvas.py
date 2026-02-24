@@ -321,7 +321,7 @@ class Canvas(Widget):
         # Forward to application
         if self.on_canvas_mouse_down:
             ix, iy = self.widget_to_image(event.x, event.y)
-            self.on_canvas_mouse_down(ix, iy, event.button)
+            self.on_canvas_mouse_down(ix, iy, event.button, event.mods)
             return True
 
         return False

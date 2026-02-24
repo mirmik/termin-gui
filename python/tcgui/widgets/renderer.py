@@ -59,6 +59,9 @@ class UIRenderer:
         self._viewport_w: int = 0
         self._viewport_h: int = 0
 
+        # Scissor clip stack for nested begin_clip/end_clip
+        self._clip_stack: list[tuple[int, int, int, int]] = []
+
     @property
     def font(self) -> FontTextureAtlas | None:
         if self._font is None:
@@ -93,14 +96,33 @@ class UIRenderer:
         self._graphics.set_depth_test(True)
 
     def begin_clip(self, x: float, y: float, w: float, h: float):
-        """Enable scissor clipping at pixel coordinates (top-left origin)."""
-        # glScissor uses bottom-left origin, so flip Y
-        gl_y = self._viewport_h - (y + h)
-        self._graphics.enable_scissor(int(x), int(gl_y), int(w), int(h))
+        """Push scissor clip rect. Nested clips are intersected."""
+        # Convert to GL bottom-left origin integers
+        ix, iy, iw, ih = int(x), int(self._viewport_h - (y + h)), int(w), int(h)
+
+        if self._clip_stack:
+            # Intersect with current top-of-stack
+            px, py, pw, ph = self._clip_stack[-1]
+            x1 = max(ix, px)
+            y1 = max(iy, py)
+            x2 = min(ix + iw, px + pw)
+            y2 = min(iy + ih, py + ph)
+            iw = max(0, x2 - x1)
+            ih = max(0, y2 - y1)
+            ix, iy = x1, y1
+
+        self._clip_stack.append((ix, iy, iw, ih))
+        self._graphics.enable_scissor(ix, iy, iw, ih)
 
     def end_clip(self):
-        """Disable scissor clipping."""
-        self._graphics.disable_scissor()
+        """Pop scissor clip rect. Restores parent clip or disables scissor."""
+        if self._clip_stack:
+            self._clip_stack.pop()
+        if self._clip_stack:
+            px, py, pw, ph = self._clip_stack[-1]
+            self._graphics.enable_scissor(px, py, pw, ph)
+        else:
+            self._graphics.disable_scissor()
 
     def _px_to_ndc(self, x: float, y: float) -> tuple[float, float]:
         """Convert pixel coordinates to NDC (-1..1)."""

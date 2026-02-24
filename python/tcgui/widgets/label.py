@@ -15,6 +15,7 @@ class Label(Widget):
         self.color: tuple[float, float, float, float] = _t.text_primary
         self.font_size: float = _t.font_size
         self.alignment: str = "left"  # left, center, right
+        self.mouse_transparent = True
 
     def compute_size(self, viewport_w: float, viewport_h: float) -> tuple[float, float]:
         if self.preferred_width and self.preferred_height:

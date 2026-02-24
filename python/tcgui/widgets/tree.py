@@ -355,6 +355,17 @@ class TreeWidget(Widget):
             return None
         if not self.contains(px, py):
             return None
+
+        # Check content widgets of visible nodes for interactive children
+        # (e.g. checkboxes). Only return hits that are deeper than the
+        # content root itself — container wrappers like HStack should not
+        # steal events from the tree.
+        for node in reversed(self._visible_nodes):
+            if node._content is not None:
+                hit = node._content.hit_test(px, py)
+                if hit is not None and hit is not node._content:
+                    return hit
+
         return self
 
     # --- Mouse events ---

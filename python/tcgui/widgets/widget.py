@@ -55,6 +55,9 @@ class Widget:
         # Clip children rendering to widget bounds
         self.clip: bool = False
 
+        # When True, hit_test skips this widget (events pass through to parent)
+        self.mouse_transparent: bool = False
+
         # Cursor: "", "arrow", "cross", "hand", "text", "move"
         self.cursor: str = ""
 
@@ -126,6 +129,9 @@ class Widget:
             hit = child.hit_test(px, py)
             if hit:
                 return hit
+
+        if self.mouse_transparent:
+            return None
 
         return self
 

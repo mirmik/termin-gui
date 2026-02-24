@@ -43,7 +43,7 @@ class TextInput(Widget):
         self._renderer: 'UIRenderer | None' = None
 
         # Callbacks
-        self.on_change: Callable[[str], None] | None = None
+        self.on_changed: Callable[[str], None] | None = None
         self.on_submit: Callable[[str], None] | None = None
 
     def compute_size(self, viewport_w: float, viewport_h: float) -> tuple[float, float]:
@@ -235,5 +235,5 @@ class TextInput(Widget):
         return True
 
     def _fire_on_change(self):
-        if self.on_change is not None:
-            self.on_change(self.text)
+        if self.on_changed is not None:
+            self.on_changed(self.text)

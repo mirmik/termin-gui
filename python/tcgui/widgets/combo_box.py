@@ -42,7 +42,7 @@ class ComboBox(Widget):
         self._dropdown: Widget | None = None
 
         # Callback
-        self.on_change: Callable[[int, str], None] | None = None
+        self.on_changed: Callable[[int, str], None] | None = None
 
     @property
     def selected_text(self) -> str:
@@ -145,8 +145,8 @@ class ComboBox(Widget):
         if 0 <= index < len(self.items):
             old = self.selected_index
             self.selected_index = index
-            if old != index and self.on_change:
-                self.on_change(index, self.items[index])
+            if old != index and self.on_changed:
+                self.on_changed(index, self.items[index])
         self._close_dropdown()
 
 

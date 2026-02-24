@@ -28,7 +28,7 @@ class Checkbox(Widget):
         self.pressed: bool = False
 
         # Callback
-        self.on_change: Callable[[bool], None] | None = None
+        self.on_changed: Callable[[bool], None] | None = None
 
         # Text settings
         self.font_size: float = _t.font_size
@@ -95,6 +95,6 @@ class Checkbox(Widget):
     def on_mouse_up(self, event: MouseEvent):
         if self.pressed and self.contains(event.x, event.y):
             self.checked = not self.checked
-            if self.on_change:
-                self.on_change(self.checked)
+            if self.on_changed:
+                self.on_changed(self.checked)
         self.pressed = False

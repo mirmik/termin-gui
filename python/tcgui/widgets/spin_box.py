@@ -53,7 +53,7 @@ class SpinBox(Widget):
         self._renderer: 'UIRenderer | None' = None
 
         # Callback
-        self.on_change: Callable[[float], None] | None = None
+        self.on_changed: Callable[[float], None] | None = None
 
     def _format_value(self) -> str:
         if self.decimals <= 0:
@@ -67,8 +67,8 @@ class SpinBox(Widget):
         val = self._clamp(val)
         if val != self.value:
             self.value = val
-            if self.on_change:
-                self.on_change(self.value)
+            if self.on_changed:
+                self.on_changed(self.value)
 
     def _increment(self):
         self._set_value(self.value + self.step)

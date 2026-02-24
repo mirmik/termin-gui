@@ -35,7 +35,7 @@ class TabBar(Widget):
         self._tab_rects: list[tuple[float, float, float, float]] = []
 
         # Callback
-        self.on_change: Callable[[int], None] | None = None
+        self.on_changed: Callable[[int], None] | None = None
 
     def compute_size(self, viewport_w: float, viewport_h: float) -> tuple[float, float]:
         if self.preferred_width and self.preferred_height:
@@ -106,8 +106,8 @@ class TabBar(Widget):
         idx = self._index_at(event.x, event.y)
         if idx >= 0 and idx != self.selected_index:
             self.selected_index = idx
-            if self.on_change:
-                self.on_change(idx)
+            if self.on_changed:
+                self.on_changed(idx)
             return True
         return idx >= 0
 
@@ -122,7 +122,7 @@ class TabView(Widget):
         self.pages: list[Widget] = []
 
         # The tab_bar is managed internally, not as a regular child
-        self.tab_bar.on_change = self._on_tab_change
+        self.tab_bar.on_changed = self._on_tab_change
 
         # Cached viewport
         self._viewport_w: float = 0

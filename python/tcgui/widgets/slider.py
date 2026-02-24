@@ -31,7 +31,7 @@ class Slider(Widget):
         self.hovered: bool = False
 
         # Callback
-        self.on_change: Callable[[float], None] | None = None
+        self.on_changed: Callable[[float], None] | None = None
 
     def compute_size(self, viewport_w: float, viewport_h: float) -> tuple[float, float]:
         if self.preferred_width and self.preferred_height:
@@ -118,5 +118,5 @@ class Slider(Widget):
         new_val = self._x_to_value(x)
         if new_val != self.value:
             self.value = new_val
-            if self.on_change:
-                self.on_change(self.value)
+            if self.on_changed:
+                self.on_changed(self.value)

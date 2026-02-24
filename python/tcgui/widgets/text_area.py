@@ -60,7 +60,7 @@ class TextArea(Widget):
         self._renderer: 'UIRenderer | None' = None
 
         # Callback
-        self.on_change: Callable[[str], None] | None = None
+        self.on_changed: Callable[[str], None] | None = None
 
     # --- Text property ---
 
@@ -404,5 +404,5 @@ class TextArea(Widget):
         return True
 
     def _fire_on_change(self):
-        if self.on_change is not None:
-            self.on_change(self.text)
+        if self.on_changed is not None:
+            self.on_changed(self.text)

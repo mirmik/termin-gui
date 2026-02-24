@@ -34,12 +34,12 @@ class SliderEdit(Widget):
         self._updating: bool = False
 
         # Callback
-        self.on_change: Callable[[float], None] | None = None
+        self.on_changed: Callable[[float], None] | None = None
 
         # Sync parameters to children
         self._sync_params()
-        self._slider.on_change = self._on_slider_change
-        self._spinbox.on_change = self._on_spinbox_change
+        self._slider.on_changed = self._on_slider_change
+        self._spinbox.on_changed = self._on_spinbox_change
 
     def _sync_params(self):
         """Push numeric params to child widgets."""
@@ -62,8 +62,8 @@ class SliderEdit(Widget):
             self._spinbox._edit_text = self._spinbox._format_value()
             self._spinbox._cursor_pos = len(self._spinbox._edit_text)
         self.value = val
-        if self.on_change:
-            self.on_change(val)
+        if self.on_changed:
+            self.on_changed(val)
         self._updating = False
 
     def _on_spinbox_change(self, val: float):
@@ -72,8 +72,8 @@ class SliderEdit(Widget):
         self._updating = True
         self._slider.value = val
         self.value = val
-        if self.on_change:
-            self.on_change(val)
+        if self.on_changed:
+            self.on_changed(val)
         self._updating = False
 
     def compute_size(self, viewport_w: float, viewport_h: float) -> tuple[float, float]:

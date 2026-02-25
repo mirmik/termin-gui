@@ -253,24 +253,23 @@ class Menu(Widget):
     def on_mouse_down(self, event: MouseEvent) -> bool:
         if event.button != MouseButton.LEFT:
             return True  # consume but ignore non-left clicks
+        # Just capture the press — activation happens on mouse_up,
+        # same as ToolBar, so blocking callbacks (e.g. file dialogs)
+        # don't corrupt SDL mouse state.
+        return True
+
+    def on_mouse_up(self, event: MouseEvent):
         idx = self._index_at(event.y)
         callback = None
         if 0 <= idx < len(self.items):
             it = self.items[idx]
             if it.enabled and it.on_click:
                 callback = it.on_click
-        # Close the menu first, then defer the callback so it runs
-        # outside event dispatch.  This prevents blocking callbacks
-        # (e.g. native file dialogs) from corrupting SDL mouse state.
-        ui = self._ui
-        if ui is not None:
-            ui.hide_overlay(self)
+        # Close menu, then invoke callback (may block).
+        if self._ui is not None:
+            self._ui.hide_overlay(self)
         if callback is not None:
-            if ui is not None:
-                ui.defer(callback)
-            else:
-                callback()
-        return True
+            callback()
 
     def hit_test(self, px: float, py: float):
         if not self.visible:

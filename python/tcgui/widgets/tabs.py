@@ -189,6 +189,8 @@ class TabView(Widget):
                 page.layout(x, content_y, width, content_h, viewport_w, viewport_h)
 
     def render(self, renderer: 'UIRenderer'):
+        from tcgui.widgets.theme import current_theme as _t
+        renderer.draw_rect(self.x, self.y, self.width, self.height, _t.bg_surface)
         self.tab_bar.render(renderer)
 
         idx = self.tab_bar.selected_index

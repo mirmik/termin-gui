@@ -77,6 +77,8 @@ class ScrollArea(Widget):
             )
 
     def render(self, renderer: 'UIRenderer'):
+        from tcgui.widgets.theme import current_theme as _t
+        renderer.draw_rect(self.x, self.y, self.width, self.height, _t.bg_surface)
         renderer.begin_clip(self.x, self.y, self.width, self.height)
 
         for child in self.children:

@@ -52,6 +52,8 @@ class ListWidget(Widget):
     def set_items(self, items: list[dict]) -> None:
         """Set list items. Each dict should have 'text' and optionally 'subtitle', 'data'."""
         self._items = list(items)
+        self._scroll_offset = 0.0
+        self._hovered_index = -1
         if self.selected_index >= len(self._items):
             self.selected_index = -1
 

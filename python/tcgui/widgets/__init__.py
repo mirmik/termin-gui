@@ -30,7 +30,9 @@ from tcgui.widgets.status_bar import StatusBar
 from tcgui.widgets.dialog import Dialog
 from tcgui.widgets.message_box import MessageBox, Buttons
 from tcgui.widgets.canvas import Canvas
+from tcgui.widgets.viewport3d import Viewport3D
 from tcgui.widgets.splitter import Splitter
+from tcgui.widgets.input_dialog import show_input_dialog
 from tcgui.widgets.color_dialog import ColorDialog
 from tcgui.widgets.file_dialog_overlay import (
     parse_filter_string,
@@ -59,5 +61,7 @@ __all__ = [
     "parse_filter_string",
     "show_open_file_dialog", "show_save_file_dialog", "show_open_directory_dialog",
     "Dialog", "MessageBox", "Buttons", "ShortcutRegistry",
+    "show_input_dialog",
     "UIRenderer", "UILoader", "UI",
+    "Viewport3D",
 ]

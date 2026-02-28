@@ -49,6 +49,16 @@ class MenuBar(Widget):
         """Add a dropdown menu with the given title."""
         self._entries.append((label, menu))
 
+    def register_shortcuts(self, ui) -> None:
+        """Register keyboard shortcuts for all menu items that have both
+        ``shortcut`` and ``on_click`` set.  Call once after the UI is created.
+        """
+        for _label, menu in self._entries:
+            for item in menu.items:
+                if item.separator or not item.shortcut or not item.on_click:
+                    continue
+                ui.add_shortcut_from_string(item.shortcut, item.on_click)
+
     # ------------------------------------------------------------------
     # Layout
     # ------------------------------------------------------------------

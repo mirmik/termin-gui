@@ -540,6 +540,13 @@ class UI:
         """Dispatch key down to focused widget, then handle UI-level keys."""
         event = KeyEvent(key, mods)
 
+        def _is_descendant(child: Widget | None, root: Widget) -> bool:
+            while child is not None:
+                if child is root:
+                    return True
+                child = child.parent
+            return False
+
         # Escape closes top overlay
         if key == Key.ESCAPE and self._overlays:
             self._hide_top_overlay()
@@ -549,6 +556,10 @@ class UI:
         if self._overlays:
             top = self._overlays[-1]
             if top.modal and top.widget is not self._tooltip_widget:
+                if (self._focused_widget is not None
+                        and _is_descendant(self._focused_widget, top.widget)):
+                    if self._focused_widget.on_key_down(event):
+                        return True
                 if top.widget.on_key_down(event):
                     return True
                 return False  # modal blocks further dispatch

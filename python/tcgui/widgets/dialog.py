@@ -62,6 +62,8 @@ class Dialog(Widget):
         """Create button widgets from configuration."""
         from tcgui.widgets.button import Button
 
+        for btn in self._button_widgets:
+            self.remove_child(btn)
         self._button_widgets.clear()
 
         for btn_text in self.buttons:
@@ -90,6 +92,7 @@ class Dialog(Widget):
         self._ui = ui
         if not self._built:
             self._build()
+        self._ensure_children()
 
         vw = ui._viewport_w
         vh = ui._viewport_h
@@ -146,6 +149,7 @@ class Dialog(Widget):
     def layout(self, x: float, y: float, width: float, height: float,
                viewport_w: float, viewport_h: float):
         super().layout(x, y, width, height, viewport_w, viewport_h)
+        self._ensure_children()
 
         # Content area
         if self.content is not None:
@@ -207,6 +211,18 @@ class Dialog(Widget):
         # Buttons
         for btn in self._button_widgets:
             btn.render(renderer)
+
+    def _ensure_children(self):
+        if self.content is not None:
+            if self.content.parent is not self:
+                if self.content.parent is not None:
+                    self.content.parent.remove_child(self.content)
+                self.add_child(self.content)
+        for btn in self._button_widgets:
+            if btn.parent is not self:
+                if btn.parent is not None:
+                    btn.parent.remove_child(btn)
+                self.add_child(btn)
 
     # ------------------------------------------------------------------
     # Hit testing

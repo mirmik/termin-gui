@@ -13,6 +13,7 @@ from tcgui.widgets.button import Button
 from tcgui.widgets.combo_box import ComboBox
 from tcgui.widgets.dialog import Dialog
 from tcgui.widgets.hstack import HStack
+from tcgui.widgets.icon_theme import FileIconProvider
 from tcgui.widgets.label import Label
 from tcgui.widgets.list_widget import ListWidget
 from tcgui.widgets.panel import Panel
@@ -61,6 +62,7 @@ class _OverlayFileDialog:
         self._back_stack: list[Path] = []
         self._forward_stack: list[Path] = []
         self._places: list[tuple[str, Path]] = self._build_places()
+        self._icons = FileIconProvider(size=20)
 
         self._dialog = Dialog()
         self._dialog.title = title
@@ -72,10 +74,10 @@ class _OverlayFileDialog:
         self._dialog.title_background_color = (0.08, 0.09, 0.11, 1.0)
         self._dialog.border_radius = 8
 
-        self._back_button = self._make_nav_button("<", "Back", self._go_back)
-        self._forward_button = self._make_nav_button(">", "Forward", self._go_forward)
-        self._up_button = self._make_nav_button("^", "Up", self._go_up)
-        self._home_button = self._make_nav_button("H", "Home", self._go_home)
+        self._back_button = self._make_nav_button("←", self._go_back)
+        self._forward_button = self._make_nav_button("→", self._go_forward)
+        self._up_button = self._make_nav_button("↑", self._go_up)
+        self._home_button = self._make_nav_button("⌂", self._go_home)
 
         self._path_input = TextInput()
         self._path_input.stretch = True
@@ -100,8 +102,10 @@ class _OverlayFileDialog:
         self._places_list.font_size = 13
         self._places_list.subtitle_font_size = 11
         self._places_list.on_select = self._on_place_select
-        self._places_list.on_activate = self._on_place_activate
+        self._places_list.on_activate = self._on_place_select
         self._places_list.item_background = (0.17, 0.18, 0.22, 0.6)
+        self._places_list.icon_provider = self._icons
+        self._places_list.icon_size = 18
 
         self._list = ListWidget()
         self._list.preferred_height = px(380)
@@ -112,6 +116,8 @@ class _OverlayFileDialog:
         self._list.on_activate = self._on_activate
         self._list.item_background = (0.17, 0.18, 0.22, 0.5)
         self._list.selected_background = (0.22, 0.43, 0.74, 0.95)
+        self._list.icon_provider = self._icons
+        self._list.icon_size = 20
 
         self._selection_label = Label()
         self._selection_label.font_size = 12
@@ -241,7 +247,7 @@ class _OverlayFileDialog:
         root.add_child(self._error_label)
         return root
 
-    def _make_nav_button(self, text: str, _tooltip: str, callback: Callable[[], None]) -> Button:
+    def _make_nav_button(self, text: str, callback: Callable[[], None]) -> Button:
         btn = Button()
         btn.text = text
         btn.preferred_width = px(30)
@@ -271,13 +277,13 @@ class _OverlayFileDialog:
                     places.append((label, resolved))
 
         home = Path.home()
-        add_place("HOME", home)
-        add_place("PROJECT", Path.cwd())
-        add_place("ROOT", Path("/"))
-        add_place("TMP", Path("/tmp"))
+        add_place("Home", home)
+        add_place("Project", Path.cwd())
+        add_place("Root", Path("/"))
+        add_place("Temp", Path("/tmp"))
 
         for folder in ("Desktop", "Documents", "Downloads", "Pictures"):
-            add_place(folder.upper(), home / folder)
+            add_place(folder, home / folder)
 
         for mount_root in (Path("/media"), Path("/mnt")):
             if not mount_root.exists() or not mount_root.is_dir():
@@ -285,7 +291,7 @@ class _OverlayFileDialog:
             try:
                 for entry in sorted(mount_root.iterdir(), key=lambda p: p.name.lower()):
                     if entry.is_dir():
-                        add_place(f"MOUNT:{entry.name}", entry)
+                        add_place(entry.name, entry)
             except Exception:
                 continue
 
@@ -297,6 +303,7 @@ class _OverlayFileDialog:
             items.append({
                 "text": label,
                 "subtitle": str(path),
+                "icon_type": self._icons.icon_type_for_directory(),
                 "data": {"path": str(path)},
             })
         self._places_list.set_items(items)
@@ -375,10 +382,12 @@ class _OverlayFileDialog:
         files = sorted((e for e in entries if e.is_file(follow_symlinks=False)), key=lambda e: e.name.lower())
 
         for entry in dirs:
-            subtitle = self._safe_subtitle(entry.path, is_dir=True)
+            suffix = self._safe_subtitle(entry.path, is_dir=True)
+            subtitle = f"Folder   {suffix}" if suffix else "Folder"
             items.append({
-                "text": f"DIR  {entry.name}",
+                "text": entry.name,
                 "subtitle": subtitle,
+                "icon_type": self._icons.icon_type_for_directory(),
                 "data": {"path": entry.path, "is_dir": True},
             })
 
@@ -388,8 +397,9 @@ class _OverlayFileDialog:
                     continue
                 subtitle = self._safe_subtitle(entry.path, is_dir=False)
                 items.append({
-                    "text": f"FILE {entry.name}",
+                    "text": entry.name,
                     "subtitle": subtitle,
+                    "icon_type": self._icons.icon_type_for_file(entry.name),
                     "data": {"path": entry.path, "is_dir": False},
                 })
 
@@ -407,16 +417,11 @@ class _OverlayFileDialog:
 
     def _format_size(self, size: int) -> str:
         value = float(size)
-        units = ("B", "KB", "MB", "GB", "TB")
-        unit = units[0]
-        for next_unit in units:
-            unit = next_unit
-            if value < 1024.0 or unit == units[-1]:
-                break
+        for unit in ("B", "KB", "MB", "GB"):
+            if value < 1024.0:
+                return f"{int(value)} B" if unit == "B" else f"{value:.1f} {unit}"
             value /= 1024.0
-        if unit == "B":
-            return f"{int(value)} {unit}"
-        return f"{value:.1f} {unit}"
+        return f"{value:.1f} TB"
 
     def _active_patterns(self) -> list[str]:
         if not self._filters:
@@ -447,9 +452,6 @@ class _OverlayFileDialog:
         path = data.get("path")
         if path:
             self._navigate_to(Path(path), push_history=True)
-
-    def _on_place_activate(self, _index: int, item: dict) -> None:
-        self._on_place_select(_index, item)
 
     def _on_select(self, _index: int, item: dict) -> None:
         data = item.get("data") or {}

@@ -177,6 +177,9 @@ class UIRenderer:
         if not font or not text:
             return
 
+        # Ensure all glyphs are in the atlas (triggers GPU sync if needed)
+        font.ensure_glyphs(text, self._graphics)
+
         self._shader.ensure_ready()
         self._shader.use()
         self._shader.set_uniform_vec4("u_color", float(color[0]), float(color[1]), float(color[2]), float(color[3]))
@@ -317,6 +320,9 @@ class UIRenderer:
         font = self.font  # Use property for lazy loading
         if not font or not text:
             return (0, 0)
+
+        # Ensure glyphs exist on CPU (no GPU sync needed just for measuring)
+        font.ensure_glyphs(text)
 
         scale = font_size / font.size
         width = 0.0

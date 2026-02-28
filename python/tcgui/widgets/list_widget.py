@@ -38,6 +38,10 @@ class ListWidget(Widget):
         self.on_select: Callable[[int, dict], None] | None = None
         self.on_activate: Callable[[int, dict], None] | None = None
 
+        # Icon support — set an icon_provider to enable icon rendering
+        self.icon_provider = None  # FileIconProvider | None
+        self.icon_size: float = 0  # 0 = no icons
+
         # Internal
         self._scroll_offset: float = 0.0
         self._hovered_index: int = -1
@@ -124,20 +128,34 @@ class ListWidget(Widget):
             text = item.get("text", "")
             subtitle = item.get("subtitle", "")
 
+            # Icon
+            text_x = self.x + self.item_padding
+            if self.icon_provider is not None and self.icon_size > 0:
+                icon_type = item.get("icon_type")
+                if icon_type:
+                    tex = self.icon_provider.get_texture(renderer, icon_type)
+                    if tex is not None:
+                        icon_y = iy + (self.item_height - self.icon_size) / 2
+                        renderer.draw_image(
+                            self.x + self.item_padding, icon_y,
+                            self.icon_size, self.icon_size, tex,
+                        )
+                        text_x = self.x + self.item_padding + self.icon_size + 6
+
             if subtitle:
                 renderer.draw_text(
-                    self.x + self.item_padding,
+                    text_x,
                     iy + self.font_size + 4,
                     text, tc, self.font_size,
                 )
                 renderer.draw_text(
-                    self.x + self.item_padding,
+                    text_x,
                     iy + self.font_size + self.subtitle_font_size + 8,
                     subtitle, self.subtitle_color, self.subtitle_font_size,
                 )
             else:
                 renderer.draw_text(
-                    self.x + self.item_padding,
+                    text_x,
                     iy + self.item_height / 2 + self.font_size / 3,
                     text, tc, self.font_size,
                 )

@@ -138,7 +138,7 @@ def build_ui(graphics):
     title.text_color = (1.0, 1.0, 1.0, 1.0)
 
     hint = Label()
-    hint.text = "Dialogs are rendered in tcgui overlay layer."
+    hint.text = "Dialogs are rendered in tcgui overlay layer with places, path bar, and filters."
     hint.font_size = 14
     hint.text_color = (0.7, 0.7, 0.75, 1.0)
 
@@ -164,6 +164,7 @@ def build_ui(graphics):
             ui,
             lambda path: set_result("Open File", path),
             title="Open File",
+            directory="~",
             filter_str="Images | *.png *.jpg *.jpeg *.bmp;;All files | *.*",
         )
 
@@ -172,6 +173,7 @@ def build_ui(graphics):
             ui,
             lambda path: set_result("Save File", path),
             title="Save File As",
+            directory="~",
             filter_str="Text | *.txt;;JSON | *.json;;All files | *.*",
         )
 
@@ -180,6 +182,7 @@ def build_ui(graphics):
             ui,
             lambda path: set_result("Open Directory", path),
             title="Open Directory",
+            directory="~",
         )
 
     btn_open = Button()

@@ -55,7 +55,7 @@ def test_child_width_reduced_by_padding():
 # --- Multiple children (BrushPanel-like) ---
 
 def test_multiple_children_height():
-    """GroupBox with 3 children: total height = title + sum(child_h) + padding*2."""
+    """GroupBox with spacing: title + children + gaps + padding*2."""
     gb = GroupBox()
     gb.expanded = True
     gb.title_height = 28
@@ -64,12 +64,13 @@ def test_multiple_children_height():
     gb.add_child(make_widget(0, 30))  # slider 1
     gb.add_child(make_widget(0, 30))  # slider 2
     w, h = gb.compute_size(VIEWPORT_W, VIEWPORT_H)
-    # h = 28 + (30+30+30) + 16 = 134
-    assert abs(h - 134) <= 0.5
+    # h = 28 + (30+30+30) + spacing*2 + 16
+    expected = 28 + (30 + 30 + 30) + gb.spacing * 2 + 16
+    assert abs(h - expected) <= 0.5
 
 
 def test_multiple_children_positioned_vertically():
-    """All children stacked vertically below title."""
+    """All children stacked vertically below title with spacing."""
     gb = GroupBox()
     gb.expanded = True
     gb.title_height = 28
@@ -84,10 +85,10 @@ def test_multiple_children_positioned_vertically():
     gb.layout(0, 0, 300, 200, VIEWPORT_W, VIEWPORT_H)
     # c1.y = 0 + 28 + 8 = 36
     assert abs(c1.y - 36) <= 0.5
-    # c2.y = 36 + 30 = 66
-    assert abs(c2.y - 66) <= 0.5
-    # c3.y = 66 + 40 = 106
-    assert abs(c3.y - 106) <= 0.5
+    # c2.y = c1.y + 30 + spacing
+    assert abs(c2.y - (36 + 30 + gb.spacing)) <= 0.5
+    # c3.y = c2.y + 40 + spacing
+    assert abs(c3.y - (36 + 30 + gb.spacing + 40 + gb.spacing)) <= 0.5
 
 
 def test_invisible_child_skipped():
@@ -104,9 +105,10 @@ def test_invisible_child_skipped():
     gb.add_child(c2)
 
     w, h = gb.compute_size(VIEWPORT_W, VIEWPORT_H)
-    # h = 28 + (30+30) + 16 = 104 (hidden skipped)
-    assert abs(h - 104) <= 0.5
+    # h = 28 + (30+30) + spacing + 16 (hidden skipped)
+    expected = 28 + (30 + 30) + gb.spacing + 16
+    assert abs(h - expected) <= 0.5
 
-    gb.layout(0, 0, 300, 104, VIEWPORT_W, VIEWPORT_H)
-    # c2.y = 36 + 30 = 66 (no gap from hidden)
-    assert abs(c2.y - 66) <= 0.5
+    gb.layout(0, 0, 300, expected, VIEWPORT_W, VIEWPORT_H)
+    # c2.y = 36 + 30 + spacing (no extra gap from hidden)
+    assert abs(c2.y - (36 + 30 + gb.spacing)) <= 0.5

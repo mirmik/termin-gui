@@ -20,6 +20,7 @@ class TextInput(Widget):
         self.text: str = ""
         self.placeholder: str = ""
         self.cursor_pos: int = 0
+        self.read_only: bool = False
 
         # Visual configuration
         self.font_size: float = max(10.0, _t.font_size - 2.0)
@@ -183,6 +184,20 @@ class TextInput(Widget):
         from tcbase import Key
 
         key = event.key
+        if self.read_only:
+            if key in (Key.LEFT, Key.RIGHT, Key.HOME, Key.END):
+                if key == Key.LEFT and self.cursor_pos > 0:
+                    self.cursor_pos -= 1
+                elif key == Key.RIGHT and self.cursor_pos < len(self.text):
+                    self.cursor_pos += 1
+                elif key == Key.HOME:
+                    self.cursor_pos = 0
+                elif key == Key.END:
+                    self.cursor_pos = len(self.text)
+                self._reset_cursor_blink()
+                return True
+            return False
+
         if key == Key.BACKSPACE:
             if self.cursor_pos > 0:
                 self.text = self.text[:self.cursor_pos - 1] + self.text[self.cursor_pos:]
@@ -228,6 +243,8 @@ class TextInput(Widget):
         return False
 
     def on_text_input(self, event: TextEvent) -> bool:
+        if self.read_only:
+            return False
         self.text = self.text[:self.cursor_pos] + event.text + self.text[self.cursor_pos:]
         self.cursor_pos += len(event.text)
         self._fire_on_change()

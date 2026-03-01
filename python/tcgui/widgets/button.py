@@ -23,6 +23,11 @@ class Button(Widget):
         self.text_color: tuple[float, float, float, float] = _t.text_primary
         self.border_radius: float = _t.border_radius
 
+        # Toggle mode
+        self.checkable: bool = False
+        self.checked: bool = False
+        self.checked_color: tuple[float, float, float, float] = _t.accent
+
         # State
         self.hovered: bool = False
         self.pressed: bool = False
@@ -50,6 +55,8 @@ class Button(Widget):
             color = self.pressed_color
         elif self.hovered:
             color = self.hover_color
+        elif self.checkable and self.checked:
+            color = self.checked_color
         else:
             color = self.background_color
 
@@ -84,6 +91,8 @@ class Button(Widget):
 
     def on_mouse_up(self, event: MouseEvent):
         if self.pressed and self.contains(event.x, event.y):
+            if self.checkable:
+                self.checked = not self.checked
             if self.on_click:
                 self.on_click()
         self.pressed = False

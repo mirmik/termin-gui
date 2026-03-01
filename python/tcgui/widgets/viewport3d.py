@@ -55,10 +55,19 @@ class Viewport3D(Widget):
     def _connect_input(self, display) -> None:
         """Получить input_manager_ptr от Display."""
         try:
-            from termin._native.render import _render_surface_get_input_manager
-            ptr = _render_surface_get_input_manager(display.tc_display_ptr)
-            self._input_manager_ptr = ptr if ptr else 0
-        except Exception:
+            from termin._native.render import (
+                _display_get_surface_ptr,
+                _render_surface_get_input_manager,
+            )
+            surface_ptr = _display_get_surface_ptr(display.tc_display_ptr)
+            if surface_ptr:
+                ptr = _render_surface_get_input_manager(surface_ptr)
+                self._input_manager_ptr = ptr if ptr else 0
+            else:
+                self._input_manager_ptr = 0
+        except Exception as e:
+            from tcbase import log
+            log.error(f"Viewport3D._connect_input failed: {e}")
             self._input_manager_ptr = 0
 
     # ------------------------------------------------------------------

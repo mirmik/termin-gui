@@ -13,8 +13,8 @@ from tcgui.widgets.theme import current_theme as _t
 class Dialog(Widget):
     """Base modal dialog with title bar, content area, and button bar.
 
-    Not placed in the normal widget tree — shown as a modal overlay
-    via :meth:`show`.
+    Can be shown as a modal overlay (:meth:`show`) or in a separate
+    native window (``show(ui, windowed=True)``).
 
     Usage::
 
@@ -24,7 +24,7 @@ class Dialog(Widget):
         dlg.buttons = ["OK", "Cancel"]
         dlg.default_button = "OK"
         dlg.on_result = lambda btn: print(btn)
-        dlg.show(ui)
+        dlg.show(ui, windowed=True)
     """
 
     def __init__(self):
@@ -53,6 +53,8 @@ class Dialog(Widget):
         # Internal
         self._button_widgets: list = []
         self._built: bool = False
+        self._windowed: bool = False
+        self._window_ui: object | None = None
 
     # ------------------------------------------------------------------
     # Build internal widgets
@@ -87,13 +89,33 @@ class Dialog(Widget):
     # Show / close
     # ------------------------------------------------------------------
 
-    def show(self, ui) -> None:
-        """Show this dialog as a centered modal overlay."""
-        self._ui = ui
+    def show(self, ui, windowed: bool = False) -> None:
+        """Show this dialog as a modal overlay or in a separate window.
+
+        When *windowed* is True and ``ui.create_window`` is available,
+        the dialog opens in its own native window.  Otherwise it falls
+        back to the normal centered-overlay behaviour.
+        """
         if not self._built:
             self._build()
         self._ensure_children()
 
+        if windowed and ui.create_window is not None:
+            vw = ui._viewport_w or 800
+            vh = ui._viewport_h or 600
+            nat_w, nat_h = self._compute_natural_size(vw, vh)
+            # Window doesn't need internal title bar — OS provides one.
+            win_h = nat_h - self.title_height + self.padding
+            window_ui = ui.create_window(self.title, int(nat_w), int(win_h))
+            if window_ui is not None:
+                self._windowed = True
+                self._window_ui = window_ui
+                self._ui = window_ui
+                window_ui.root = self
+                return
+
+        # Fallback: overlay in the current UI.
+        self._ui = ui
         vw = ui._viewport_w
         vh = ui._viewport_h
         w, h = self.compute_size(vw, vh)
@@ -106,8 +128,13 @@ class Dialog(Widget):
                         on_dismiss=self._on_overlay_dismissed)
 
     def close(self) -> None:
-        """Remove this dialog from the overlay stack."""
-        if self._ui is not None:
+        """Close the dialog (overlay or window)."""
+        if self._windowed and self._window_ui is not None:
+            window_ui = self._window_ui
+            self._window_ui = None
+            self._windowed = False
+            window_ui.root = None  # triggers on_empty → window destroyed
+        elif self._ui is not None:
             self._ui.hide_overlay(self)
 
     def _on_overlay_dismissed(self):
@@ -119,7 +146,8 @@ class Dialog(Widget):
     # Sizing
     # ------------------------------------------------------------------
 
-    def compute_size(self, viewport_w: float, viewport_h: float) -> tuple[float, float]:
+    def _compute_natural_size(self, viewport_w: float, viewport_h: float) -> tuple[float, float]:
+        """Compute size based on content (always includes title bar)."""
         content_w, content_h = 0.0, 0.0
         if self.content is not None:
             content_w, content_h = self.content.compute_size(viewport_w, viewport_h)
@@ -142,6 +170,11 @@ class Dialog(Widget):
 
         return (w, h)
 
+    def compute_size(self, viewport_w: float, viewport_h: float) -> tuple[float, float]:
+        if self._windowed:
+            return (viewport_w, viewport_h)
+        return self._compute_natural_size(viewport_w, viewport_h)
+
     # ------------------------------------------------------------------
     # Layout
     # ------------------------------------------------------------------
@@ -154,9 +187,13 @@ class Dialog(Widget):
         # Content area
         if self.content is not None:
             cx = x + self.padding
-            cy = y + self.title_height
             cw = width - self.padding * 2
-            _, ch = self.content.compute_size(viewport_w, viewport_h)
+            if self._windowed:
+                cy = y + self.padding
+                ch = height - self.padding * 2 - self.button_bar_height
+            else:
+                cy = y + self.title_height
+                _, ch = self.content.compute_size(viewport_w, viewport_h)
             self.content.layout(cx, cy, cw, ch, viewport_w, viewport_h)
 
         # Buttons: right-aligned at bottom
@@ -183,26 +220,25 @@ class Dialog(Widget):
     def render(self, renderer: 'UIRenderer'):
         # Background
         renderer.draw_rect(self.x, self.y, self.width, self.height,
-                           self.background_color, self.border_radius)
+                           self.background_color,
+                           0 if self._windowed else self.border_radius)
 
-        # Title bar
-        renderer.draw_rect(self.x, self.y, self.width, self.title_height,
-                           self.title_background_color, self.border_radius)
-        # Cover bottom corners of title bar so they don't round
-        if self.title_height < self.height:
-            renderer.draw_rect(
-                self.x, self.y + self.title_height - self.border_radius,
-                self.width, self.border_radius,
-                self.title_background_color,
-            )
-
-        # Title text
-        if self.title:
-            renderer.draw_text(
-                self.x + self.padding,
-                self.y + self.title_height / 2 + self.title_font_size * 0.35,
-                self.title, self.title_text_color, self.title_font_size,
-            )
+        # Title bar (overlay mode only — windowed has OS title bar)
+        if not self._windowed:
+            renderer.draw_rect(self.x, self.y, self.width, self.title_height,
+                               self.title_background_color, self.border_radius)
+            if self.title_height < self.height:
+                renderer.draw_rect(
+                    self.x, self.y + self.title_height - self.border_radius,
+                    self.width, self.border_radius,
+                    self.title_background_color,
+                )
+            if self.title:
+                renderer.draw_text(
+                    self.x + self.padding,
+                    self.y + self.title_height / 2 + self.title_font_size * 0.35,
+                    self.title, self.title_text_color, self.title_font_size,
+                )
 
         # Content
         if self.content is not None:
@@ -255,5 +291,8 @@ class Dialog(Widget):
     def on_key_down(self, event: KeyEvent) -> bool:
         if event.key == Key.ENTER and self.default_button:
             self._on_button_click(self.default_button)
+            return True
+        if event.key == Key.ESCAPE and self.cancel_button and self._windowed:
+            self._on_button_click(self.cancel_button)
             return True
         return False

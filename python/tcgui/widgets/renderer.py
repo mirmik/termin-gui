@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import numpy as np
 
 from tgfx import GraphicsBackend, TcShader
@@ -254,6 +255,46 @@ class UIRenderer:
         y = cy + font_size / 2  # baseline offset
 
         self.draw_text(x, y, text, color, font_size)
+
+    def draw_line(self, x1: float, y1: float, x2: float, y2: float,
+                  color: tuple[float, float, float, float],
+                  thickness: float = 1.0):
+        """Draw a line between two pixel coordinates."""
+        dx = x2 - x1
+        dy = y2 - y1
+        length = math.sqrt(dx * dx + dy * dy)
+        if length < 0.001:
+            return
+
+        # Perpendicular normal
+        half = thickness / 2.0
+        nx = -dy / length * half
+        ny = dx / length * half
+
+        # 4 corners of the thin quad
+        vertices_px = [
+            (x1 + nx, y1 + ny),
+            (x1 - nx, y1 - ny),
+            (x2 + nx, y2 + ny),
+            (x2 - nx, y2 - ny),
+        ]
+
+        # Convert to NDC
+        ndc = np.array(
+            [self._px_to_ndc(px, py) for px, py in vertices_px],
+            dtype=np.float32,
+        )
+
+        self._shader.ensure_ready()
+        self._shader.use()
+        self._shader.set_uniform_vec4(
+            "u_color",
+            float(color[0]), float(color[1]),
+            float(color[2]), float(color[3]),
+        )
+        self._shader.set_uniform_int("u_texture_mode", 0)
+
+        self._graphics.draw_ui_vertices(ndc)
 
     def draw_rect_outline(self, x: float, y: float, w: float, h: float,
                           color: tuple[float, float, float, float],

@@ -5,6 +5,7 @@ from __future__ import annotations
 import time
 from typing import Any, Callable
 
+from tcbase import MouseButton
 from tcgui.widgets.widget import Widget
 from tcgui.widgets.events import MouseEvent, MouseWheelEvent, KeyEvent
 from tcgui.widgets.theme import current_theme as _t
@@ -111,6 +112,7 @@ class TreeWidget(Widget):
         # Drag & drop
         self.draggable: bool = False
         self.on_drop: Callable[[TreeNode, TreeNode | None, str], None] | None = None
+        self.on_context_menu: Callable[[TreeNode | None, float, float], None] | None = None
         # on_drop(dragged_node, target_node, position)
         # position: "above" | "below" | "inside" | "root"
 
@@ -407,6 +409,15 @@ class TreeWidget(Widget):
         self._cancel_drag()
 
     def on_mouse_down(self, event: MouseEvent) -> bool:
+        if event.button == MouseButton.RIGHT:
+            node = self._node_at_y(event.y)
+            if node is not None:
+                self._select_node(node)
+            if self.on_context_menu is not None:
+                self.on_context_menu(node, event.x, event.y)
+                return True
+            return node is not None
+
         node = self._node_at_y(event.y)
         if node is None:
             return False

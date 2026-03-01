@@ -4,6 +4,7 @@ from __future__ import annotations
 import time
 from typing import Callable
 
+from tcbase import MouseButton
 from tcgui.widgets.widget import Widget
 from tcgui.widgets.events import MouseEvent, MouseWheelEvent
 from tcgui.widgets.theme import current_theme as _t
@@ -37,6 +38,7 @@ class ListWidget(Widget):
         # Callbacks: (index, item_dict)
         self.on_select: Callable[[int, dict], None] | None = None
         self.on_activate: Callable[[int, dict], None] | None = None
+        self.on_context_menu: Callable[[int, dict, float, float], None] | None = None
 
         # Icon support — set an icon_provider to enable icon rendering
         self.icon_provider = None  # FileIconProvider | None
@@ -188,6 +190,16 @@ class ListWidget(Widget):
 
     def on_mouse_down(self, event: MouseEvent) -> bool:
         idx = self._index_at(event.y)
+        if event.button == MouseButton.RIGHT:
+            if idx < 0:
+                return False
+            self.selected_index = idx
+            if self.on_select:
+                self.on_select(idx, self._items[idx])
+            if self.on_context_menu:
+                self.on_context_menu(idx, self._items[idx], event.x, event.y)
+            return True
+
         if idx < 0:
             return False
 

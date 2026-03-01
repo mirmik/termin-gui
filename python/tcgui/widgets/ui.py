@@ -69,6 +69,11 @@ class UI:
         self._current_cursor: str = ""
         self.on_cursor_changed: Callable[[str], None] | None = None
 
+        # Window management callbacks (set by application)
+        self.create_window: Callable[[str, int, int], UI | None] | None = None
+        self.close_window: Callable[[], None] | None = None
+        self.on_empty: Callable[[], None] | None = None
+
     # ------------------------------------------------------------------
     # Properties
     # ------------------------------------------------------------------
@@ -86,6 +91,8 @@ class UI:
         # Propagate _ui reference
         if widget is not None:
             self._set_ui_recursive(widget)
+        else:
+            self._check_empty()
 
     @property
     def font(self) -> FontTextureAtlas | None:
@@ -216,7 +223,7 @@ class UI:
 
     def render(self, viewport_w: int, viewport_h: int):
         """Render the UI and all overlays."""
-        if not self._root:
+        if not self._root and not self._overlays:
             return
 
         # Re-layout if viewport changed or layout invalidated
@@ -229,7 +236,8 @@ class UI:
         self._update_tooltip()
 
         self._renderer.begin(viewport_w, viewport_h)
-        self._root.render(self._renderer)
+        if self._root:
+            self._root.render(self._renderer)
 
         # Render overlays on top (re-center modal dialogs if viewport changed)
         for entry in self._overlays:
@@ -267,6 +275,7 @@ class UI:
                 self._overlays.remove(entry)
                 if entry.on_dismiss:
                     entry.on_dismiss()
+                self._check_empty()
                 return
 
     def _hide_top_overlay(self):
@@ -275,6 +284,12 @@ class UI:
             entry = self._overlays.pop()
             if entry.on_dismiss:
                 entry.on_dismiss()
+            self._check_empty()
+
+    def _check_empty(self):
+        """If root is None and no overlays remain, fire on_empty callback."""
+        if self._root is None and not self._overlays and self.on_empty is not None:
+            self.on_empty()
 
     # ------------------------------------------------------------------
     # Focus management
@@ -373,7 +388,7 @@ class UI:
 
     def mouse_move(self, x: float, y: float) -> bool:
         """Handle mouse move event."""
-        if not self._root:
+        if not self._root and not self._overlays:
             return False
 
         self._last_mouse_x = x
@@ -396,15 +411,16 @@ class UI:
                 return True
 
         # Normal hover
-        hit = self._root.hit_test(x, y)
-        self._update_hover(hit, event)
+        if self._root:
+            hit = self._root.hit_test(x, y)
+            self._update_hover(hit, event)
 
-        # Tooltip tracking
-        if hit != self._tooltip_target or hit is None:
-            self._hide_tooltip()
-            if hit is not None and hit.tooltip:
-                self._tooltip_target = hit
-                self._hover_start_time = time.monotonic()
+            # Tooltip tracking
+            if hit != self._tooltip_target or hit is None:
+                self._hide_tooltip()
+                if hit is not None and hit.tooltip:
+                    self._tooltip_target = hit
+                    self._hover_start_time = time.monotonic()
 
         return False
 
@@ -441,7 +457,7 @@ class UI:
                    button: MouseButton = MouseButton.LEFT,
                    mods: int = 0) -> bool:
         """Handle mouse down event."""
-        if not self._root:
+        if not self._root and not self._overlays:
             return False
 
         event = MouseEvent(x, y, button, mods)
@@ -467,6 +483,9 @@ class UI:
 
         # --- Hide tooltip on any click ---
         self._hide_tooltip()
+
+        if not self._root:
+            return False
 
         # --- Context menu (right click) ---
         if button == MouseButton.RIGHT:
@@ -507,7 +526,7 @@ class UI:
 
     def mouse_wheel(self, dx: float, dy: float, x: float, y: float) -> bool:
         """Handle mouse wheel event. Bubbles up through parents."""
-        if not self._root:
+        if not self._root and not self._overlays:
             return False
 
         event = MouseWheelEvent(dx, dy, x, y)
@@ -524,6 +543,9 @@ class UI:
                         return True
                     widget = widget.parent
                 return entry.modal
+
+        if not self._root:
+            return False
 
         # Normal bubble
         widget = self._root.hit_test(x, y)

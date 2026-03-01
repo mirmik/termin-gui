@@ -494,10 +494,12 @@ class UI:
 
         return False
 
-    def mouse_up(self, x: float, y: float) -> bool:
+    def mouse_up(self, x: float, y: float,
+                 button: MouseButton = MouseButton.LEFT,
+                 mods: int = 0) -> bool:
         """Handle mouse up event."""
         if self._pressed_widget:
-            event = MouseEvent(x, y)
+            event = MouseEvent(x, y, button, mods)
             self._pressed_widget.on_mouse_up(event)
             self._pressed_widget = None
             return True

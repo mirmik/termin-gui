@@ -156,7 +156,7 @@ class Viewport3D(Widget):
                 from termin._native.render import _input_manager_on_mouse_move
                 _input_manager_on_mouse_move(
                     self._input_manager_ptr,
-                    float(event.x), float(event.y),
+                    float(event.x - self.x), float(event.y - self.y),
                 )
             except Exception:
                 pass

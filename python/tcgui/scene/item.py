@@ -5,6 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from tcgui.widgets.events import KeyEvent, MouseEvent, MouseWheelEvent, TextEvent
+from tcgui.widgets.widget import Widget
+
 
 @dataclass
 class SceneTransform:
@@ -125,3 +128,124 @@ class RectItem(GraphicsItem):
                 self.text_color,
                 self.font_size,
             )
+
+
+class GraphicsWidgetItem(GraphicsItem):
+    """Scene item that hosts a regular Widget and dispatches input to it."""
+
+    def __init__(self, widget: Widget) -> None:
+        super().__init__()
+        self.widget = widget
+        self.selectable = False
+        self.draggable = False
+        self._hovered_widget: Widget | None = None
+        self._pressed_widget: Widget | None = None
+        self._focused_widget: Widget | None = None
+
+    def _screen_rect(self, transform: SceneTransform) -> tuple[float, float, float, float]:
+        wx, wy, ww, wh = self.world_bounds()
+        sx, sy = transform.world_to_screen(wx, wy)
+        sw = ww * transform.zoom
+        sh = wh * transform.zoom
+        return sx, sy, sw, sh
+
+    def _set_ui_recursive(self, widget: Widget, ui) -> None:
+        widget._ui = ui
+        for child in widget.children:
+            self._set_ui_recursive(child, ui)
+
+    def ensure_ui(self, ui) -> None:
+        if ui is None:
+            return
+        if self.widget._ui is ui:
+            return
+        self._set_ui_recursive(self.widget, ui)
+
+    def layout_widget(self, transform: SceneTransform, viewport_w: float, viewport_h: float, ui=None) -> None:
+        self.ensure_ui(ui)
+        sx, sy, sw, sh = self._screen_rect(transform)
+        self.widget.layout(sx, sy, max(1.0, sw), max(1.0, sh), viewport_w, viewport_h)
+
+    def paint(self, renderer, transform: SceneTransform) -> None:
+        # Render the hosted widget in screen space at transformed item bounds.
+        _, _, sw, sh = self._screen_rect(transform)
+        self.layout_widget(transform, max(1.0, sw), max(1.0, sh))
+        self.widget.render(renderer)
+
+    def clear_interaction_state(self) -> None:
+        self.clear_hover_state()
+        self.clear_focus_state()
+
+    def clear_hover_state(self) -> None:
+        if self._hovered_widget is not None:
+            self._hovered_widget.on_mouse_leave()
+        self._hovered_widget = None
+        self._pressed_widget = None
+
+    def clear_focus_state(self) -> None:
+        if self._focused_widget is not None:
+            self._focused_widget.on_blur()
+        self._focused_widget = None
+
+    def _update_hover(self, hit: Widget | None, event: MouseEvent) -> None:
+        if hit is not self._hovered_widget:
+            if self._hovered_widget is not None:
+                self._hovered_widget.on_mouse_leave()
+            if hit is not None:
+                hit.on_mouse_enter()
+            self._hovered_widget = hit
+        if hit is not None:
+            hit.on_mouse_move(event)
+
+    def dispatch_mouse_move(self, x: float, y: float, mods: int = 0) -> bool:
+        event = MouseEvent(x, y, mods=mods)
+        if self._pressed_widget is not None:
+            self._pressed_widget.on_mouse_move(event)
+            return True
+        hit = self.widget.hit_test(x, y)
+        self._update_hover(hit, event)
+        return hit is not None
+
+    def dispatch_mouse_down(self, x: float, y: float, button, mods: int = 0) -> bool:
+        event = MouseEvent(x, y, button=button, mods=mods)
+        hit = self.widget.hit_test(x, y)
+        self._update_hover(hit, event)
+        if hit is None:
+            return False
+        if hit.focusable and self._focused_widget is not hit:
+            if self._focused_widget is not None:
+                self._focused_widget.on_blur()
+            self._focused_widget = hit
+            self._focused_widget.on_focus()
+        if hit.on_mouse_down(event):
+            self._pressed_widget = hit
+            return True
+        return False
+
+    def dispatch_mouse_up(self, x: float, y: float, button, mods: int = 0) -> bool:
+        if self._pressed_widget is None:
+            return False
+        event = MouseEvent(x, y, button=button, mods=mods)
+        self._pressed_widget.on_mouse_up(event)
+        self._pressed_widget = None
+        return True
+
+    def dispatch_mouse_wheel(self, dx: float, dy: float, x: float, y: float) -> bool:
+        event = MouseWheelEvent(dx, dy, x, y)
+        hit = self.widget.hit_test(x, y)
+        widget = hit
+        while widget is not None:
+            if widget.on_mouse_wheel(event):
+                return True
+            widget = widget.parent
+        return hit is not None
+
+    def dispatch_key_down(self, key, mods: int = 0) -> bool:
+        if self._focused_widget is None:
+            return False
+        return self._focused_widget.on_key_down(KeyEvent(key, mods))
+
+    def dispatch_text_input(self, text: str) -> bool:
+        if self._focused_widget is None:
+            return False
+        return self._focused_widget.on_text_input(TextEvent(text))

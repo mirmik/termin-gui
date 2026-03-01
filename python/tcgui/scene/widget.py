@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from tcbase import Key, MouseButton
 
-from tcgui.scene.item import GraphicsItem, SceneTransform
+from tcgui.scene.item import GraphicsItem, GraphicsWidgetItem, SceneTransform
 from tcgui.scene.scene import GraphicsScene
-from tcgui.widgets.events import MouseEvent, MouseWheelEvent, KeyEvent
+from tcgui.widgets.events import MouseEvent, MouseWheelEvent, KeyEvent, TextEvent
 from tcgui.widgets.widget import Widget
 
 
@@ -44,6 +44,9 @@ class SceneView(Widget):
         self._drag_item_start_y = 0.0
         self._drag_mouse_start_wx = 0.0
         self._drag_mouse_start_wy = 0.0
+        self._widget_hover_item: GraphicsWidgetItem | None = None
+        self._widget_focus_item: GraphicsWidgetItem | None = None
+        self._widget_pressed_item: GraphicsWidgetItem | None = None
 
     def world_to_screen(self, wx: float, wy: float) -> tuple[float, float]:
         return (
@@ -96,6 +99,34 @@ class SceneView(Widget):
         self.scene.render(renderer, self._make_transform())
         renderer.end_clip()
 
+    def _selectable_ancestor(self, item: GraphicsItem | None) -> GraphicsItem | None:
+        current = item
+        while current is not None and not current.selectable:
+            current = current.parent
+        return current
+
+    def _draggable_ancestor(self, item: GraphicsItem | None) -> GraphicsItem | None:
+        current = item
+        while current is not None and not current.draggable:
+            current = current.parent
+        return current
+
+    def _set_widget_focus_item(self, item: GraphicsWidgetItem | None) -> None:
+        if self._widget_focus_item is item:
+            return
+        if self._widget_focus_item is not None:
+            self._widget_focus_item.clear_focus_state()
+        self._widget_focus_item = item
+
+    def _prepare_widget_item_layout(self, item: GraphicsWidgetItem) -> None:
+        item.layout_widget(self._make_transform(), self.width, self.height, self._ui)
+
+    def _clear_widget_hover(self) -> None:
+        if self._widget_hover_item is None:
+            return
+        self._widget_hover_item.clear_hover_state()
+        self._widget_hover_item = None
+
     def on_mouse_down(self, event: MouseEvent) -> bool:
         if event.button == MouseButton.MIDDLE:
             self._panning = True
@@ -110,12 +141,26 @@ class SceneView(Widget):
 
         wx, wy = self.screen_to_world(event.x, event.y)
         hit = self.scene.hit_test(wx, wy)
-        self.scene.set_selected(hit)
+        if isinstance(hit, GraphicsWidgetItem):
+            self._prepare_widget_item_layout(hit)
+            self.scene.set_selected(self._selectable_ancestor(hit.parent))
+            self._set_widget_focus_item(hit)
+            handled = hit.dispatch_mouse_down(event.x, event.y, event.button, event.mods)
+            if handled:
+                self._widget_pressed_item = hit
+                self._widget_hover_item = hit
+                return True
+            return True
 
-        if hit is not None and hit.draggable:
-            self._drag_item = hit
-            self._drag_item_start_x = hit.x
-            self._drag_item_start_y = hit.y
+        self._clear_widget_hover()
+        self.scene.set_selected(self._selectable_ancestor(hit))
+        self._set_widget_focus_item(None)
+
+        drag_target = self._draggable_ancestor(hit)
+        if drag_target is not None:
+            self._drag_item = drag_target
+            self._drag_item_start_x = drag_target.x
+            self._drag_item_start_y = drag_target.y
             self._drag_mouse_start_wx = wx
             self._drag_mouse_start_wy = wy
         return True
@@ -126,17 +171,42 @@ class SceneView(Widget):
             self.offset_y = self._pan_start_offset_y + (event.y - self._pan_start_y)
             return
 
+        if self._widget_pressed_item is not None:
+            self._prepare_widget_item_layout(self._widget_pressed_item)
+            self._widget_pressed_item.dispatch_mouse_move(event.x, event.y)
+            return
+
+        wx, wy = self.screen_to_world(event.x, event.y)
+        hit = self.scene.hit_test(wx, wy)
+        if isinstance(hit, GraphicsWidgetItem):
+            self._prepare_widget_item_layout(hit)
+            if self._widget_hover_item is not hit:
+                self._clear_widget_hover()
+                self._widget_hover_item = hit
+            hit.dispatch_mouse_move(event.x, event.y)
+            return
+        self._clear_widget_hover()
+
         if self._drag_item is not None:
-            wx, wy = self.screen_to_world(event.x, event.y)
             self._drag_item.x = self._drag_item_start_x + (wx - self._drag_mouse_start_wx)
             self._drag_item.y = self._drag_item_start_y + (wy - self._drag_mouse_start_wy)
 
     def on_mouse_up(self, event: MouseEvent) -> None:
-        del event
+        if self._widget_pressed_item is not None:
+            self._prepare_widget_item_layout(self._widget_pressed_item)
+            self._widget_pressed_item.dispatch_mouse_up(event.x, event.y, event.button, event.mods)
+            self._widget_pressed_item = None
         self._panning = False
         self._drag_item = None
 
     def on_mouse_wheel(self, event: MouseWheelEvent) -> bool:
+        wx, wy = self.screen_to_world(event.x, event.y)
+        hit = self.scene.hit_test(wx, wy)
+        if isinstance(hit, GraphicsWidgetItem):
+            self._prepare_widget_item_layout(hit)
+            if hit.dispatch_mouse_wheel(event.dx, event.dy, event.x, event.y):
+                return True
+
         before_wx, before_wy = self.screen_to_world(event.x, event.y)
         factor = self.zoom_factor if event.dy > 0 else 1.0 / self.zoom_factor
         self.zoom = max(self.min_zoom, min(self.zoom * factor, self.max_zoom))
@@ -145,6 +215,10 @@ class SceneView(Widget):
         return True
 
     def on_key_down(self, event: KeyEvent) -> bool:
+        if self._widget_focus_item is not None:
+            self._prepare_widget_item_layout(self._widget_focus_item)
+            if self._widget_focus_item.dispatch_key_down(event.key, event.mods):
+                return True
         if event.key == Key.DELETE:
             for item in self.scene.selected_items[:]:
                 if item.parent is None:
@@ -152,3 +226,9 @@ class SceneView(Widget):
             self.scene.clear_selection()
             return True
         return False
+
+    def on_text_input(self, event: TextEvent) -> bool:
+        if self._widget_focus_item is None:
+            return False
+        self._prepare_widget_item_layout(self._widget_focus_item)
+        return self._widget_focus_item.dispatch_text_input(event.text)

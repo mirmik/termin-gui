@@ -24,11 +24,11 @@ class SpinBox(Widget):
         self.decimals: int = 2
 
         # Visual configuration
-        self.font_size: float = _t.font_size
-        self.padding: float = 6
+        self.font_size: float = max(10.0, _t.font_size - 2.0)
+        self.padding: float = 4
         self.border_width: float = 1
         self.border_radius: float = _t.border_radius
-        self.button_width: float = 20
+        self.button_width: float = 18
 
         # Colors
         self.background_color: tuple[float, float, float, float] = _t.bg_input
@@ -177,7 +177,7 @@ class SpinBox(Widget):
         text_x = self.x + self.padding + bw
         text_area_width = self.width - (self.padding + bw) * 2 - self.button_width
         text_area_height = self.height - bw * 2
-        baseline_y = self.y + bw + self.padding + self.font_size
+        baseline_y = self.y + self.height / 2 + self.font_size * 0.35
 
         renderer.begin_clip(text_x, self.y + bw, text_area_width, text_area_height)
 
@@ -190,7 +190,7 @@ class SpinBox(Widget):
             if self._cursor_visible:
                 cursor_px = self._measure_text_width(renderer, self._edit_text[:self._cursor_pos])
                 cursor_screen_x = text_x + cursor_px
-                cursor_y = self.y + bw + self.padding
+                cursor_y = self.y + (self.height - self.font_size) / 2
                 renderer.draw_rect(cursor_screen_x, cursor_y, 1.5, self.font_size, self.cursor_color)
 
         renderer.end_clip()

@@ -91,11 +91,11 @@ class TreeWidget(Widget):
         self.root_nodes: list[TreeNode] = []
 
         # Configuration
-        self.indent_size: float = 20
-        self.toggle_size: float = 16
-        self.row_height: float = 28
+        self.indent_size: float = 16
+        self.toggle_size: float = 12
+        self.row_height: float = max(18.0, _t.font_size + 6.0)
         self.row_spacing: float = 0
-        self.toggle_font_size: float = 10
+        self.toggle_font_size: float = max(8.0, _t.font_size - 2.0)
 
         # Colors
         self.selected_background: tuple[float, float, float, float] = _t.selected

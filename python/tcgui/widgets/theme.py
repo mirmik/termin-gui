@@ -45,10 +45,10 @@ class Theme:
         self.scrollbar_hover: tuple = (0.7, 0.7, 0.7, 0.7)
 
         # --- Metrics ---
-        self.font_size: float = 14.0
-        self.font_size_small: float = 11.0
+        self.font_size: float = 11.0
+        self.font_size_small: float = 9.0
         self.border_radius: float = 3.0
-        self.spacing: float = 6.0
+        self.spacing: float = 4.0
 
     @classmethod
     def dark(cls) -> Theme:

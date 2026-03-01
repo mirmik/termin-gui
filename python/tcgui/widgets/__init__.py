@@ -15,6 +15,7 @@ from tcgui.widgets.separator import Separator
 from tcgui.widgets.image_widget import ImageWidget
 from tcgui.widgets.text_input import TextInput
 from tcgui.widgets.list_widget import ListWidget
+from tcgui.widgets.table_widget import TableColumn, TableWidget
 from tcgui.widgets.progress_bar import ProgressBar
 from tcgui.widgets.slider import Slider
 from tcgui.widgets.combo_box import ComboBox
@@ -52,6 +53,7 @@ __all__ = [
     "Widget",
     "HStack", "VStack", "Panel", "ScrollArea", "GroupBox",
     "Label", "Button", "Checkbox", "IconButton", "Separator", "ImageWidget", "TextInput", "ListWidget",
+    "TableColumn", "TableWidget",
     "ProgressBar", "Slider", "ComboBox", "SpinBox", "SliderEdit", "TextArea",
     "TreeNode", "TreeWidget",
     "TabBar", "TabView",

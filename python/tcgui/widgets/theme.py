@@ -128,6 +128,17 @@ class Theme:
             widget.font_size = self.font_size
             widget.border_radius = self.border_radius + 1
 
+        elif cls_name == "TableWidget":
+            widget.header_background = self.bg_surface
+            widget.header_text_color = self.text_muted
+            widget.header_border_color = self._with_alpha(self.border, 0.5)
+            widget.row_background = self._with_alpha(self.bg_input_focus, 0.3)
+            widget.row_alt_background = self._with_alpha(self.bg_input_focus, 0.15)
+            widget.selected_background = self.selected
+            widget.hover_background = self.hover_subtle
+            widget.text_color = self.text_primary
+            widget.selected_text_color = self.text_primary
+
         elif cls_name == "ProgressBar":
             widget.background_color = self.bg_surface
             widget.fill_color = self.accent

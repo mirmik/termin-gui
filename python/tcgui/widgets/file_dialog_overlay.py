@@ -148,8 +148,8 @@ class _OverlayFileDialog:
         self._refresh_list()
         self._update_nav_buttons()
 
-    def show(self, ui) -> None:
-        self._dialog.show(ui)
+    def show(self, ui, *, windowed: bool = False) -> None:
+        self._dialog.show(ui, windowed=windowed)
 
     def _configure_dialog_buttons(self) -> None:
         if self._mode == "open_file":
@@ -555,8 +555,9 @@ def show_open_file_dialog(
     directory: str = "",
     filter_str: str = "",
     filetypes: Sequence[FilterSpec] | None = None,
+    windowed: bool = False,
 ) -> None:
-    """Show overlay open-file dialog. Result is delivered via callback."""
+    """Show open-file dialog. Result is delivered via callback."""
     dlg = _OverlayFileDialog(
         mode="open_file",
         title=title,
@@ -565,7 +566,7 @@ def show_open_file_dialog(
         filetypes=filetypes,
         on_result=on_result,
     )
-    dlg.show(ui)
+    dlg.show(ui, windowed=windowed)
 
 
 def show_save_file_dialog(
@@ -576,8 +577,9 @@ def show_save_file_dialog(
     directory: str = "",
     filter_str: str = "",
     filetypes: Sequence[FilterSpec] | None = None,
+    windowed: bool = False,
 ) -> None:
-    """Show overlay save-file dialog. Result is delivered via callback."""
+    """Show save-file dialog. Result is delivered via callback."""
     dlg = _OverlayFileDialog(
         mode="save_file",
         title=title,
@@ -586,7 +588,7 @@ def show_save_file_dialog(
         filetypes=filetypes,
         on_result=on_result,
     )
-    dlg.show(ui)
+    dlg.show(ui, windowed=windowed)
 
 
 def show_open_directory_dialog(
@@ -595,8 +597,9 @@ def show_open_directory_dialog(
     *,
     title: str = "Open Directory",
     directory: str = "",
+    windowed: bool = False,
 ) -> None:
-    """Show overlay open-directory dialog. Result is delivered via callback."""
+    """Show open-directory dialog. Result is delivered via callback."""
     dlg = _OverlayFileDialog(
         mode="open_directory",
         title=title,
@@ -605,4 +608,4 @@ def show_open_directory_dialog(
         filetypes=None,
         on_result=on_result,
     )
-    dlg.show(ui)
+    dlg.show(ui, windowed=windowed)

@@ -121,7 +121,8 @@ class TabView(Widget):
         self.tab_position: str = "top"  # top | bottom
         self.pages: list[Widget] = []
 
-        # The tab_bar is managed internally, not as a regular child
+        # Keep tab_bar in children so parent/_ui propagation works.
+        self.add_child(self.tab_bar)
         self.tab_bar.on_changed = self._on_tab_change
 
         # Cached viewport
@@ -140,13 +141,15 @@ class TabView(Widget):
     def add_tab(self, title: str, content: Widget):
         """Add a tab with title and content widget."""
         self.tab_bar.tabs.append(title)
+        self.add_child(content)
         self.pages.append(content)
 
     def remove_tab(self, index: int):
         """Remove tab at index."""
         if 0 <= index < len(self.pages):
             self.tab_bar.tabs.pop(index)
-            self.pages.pop(index)
+            page = self.pages.pop(index)
+            self.remove_child(page)
             if self.tab_bar.selected_index >= len(self.pages):
                 self.tab_bar.selected_index = max(0, len(self.pages) - 1)
 

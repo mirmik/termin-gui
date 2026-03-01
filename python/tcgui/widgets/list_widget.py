@@ -191,14 +191,21 @@ class ListWidget(Widget):
     def on_mouse_down(self, event: MouseEvent) -> bool:
         idx = self._index_at(event.y)
         if event.button == MouseButton.RIGHT:
-            if idx < 0:
-                return False
-            self.selected_index = idx
-            if self.on_select:
-                self.on_select(idx, self._items[idx])
             if self.on_context_menu:
-                self.on_context_menu(idx, self._items[idx], event.x, event.y)
-            return True
+                if idx >= 0:
+                    self.selected_index = idx
+                    if self.on_select:
+                        self.on_select(idx, self._items[idx])
+                    self.on_context_menu(idx, self._items[idx], event.x, event.y)
+                else:
+                    self.on_context_menu(-1, {}, event.x, event.y)
+                return True
+            if idx >= 0:
+                self.selected_index = idx
+                if self.on_select:
+                    self.on_select(idx, self._items[idx])
+                return True
+            return False
 
         if idx < 0:
             return False

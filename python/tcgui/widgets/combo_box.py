@@ -50,6 +50,24 @@ class ComboBox(Widget):
             return self.items[self.selected_index]
         return ""
 
+    def clear(self) -> None:
+        """Remove all items."""
+        self.items = []
+        self.selected_index = -1
+
+    def add_item(self, text: str) -> None:
+        """Append a single item."""
+        self.items.append(text)
+
+    @property
+    def item_count(self) -> int:
+        return len(self.items)
+
+    def item_text(self, index: int) -> str:
+        if 0 <= index < len(self.items):
+            return self.items[index]
+        return ""
+
     def compute_size(self, viewport_w: float, viewport_h: float) -> tuple[float, float]:
         if self.preferred_width and self.preferred_height:
             return (

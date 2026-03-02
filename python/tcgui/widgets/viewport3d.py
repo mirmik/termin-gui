@@ -28,8 +28,10 @@ if TYPE_CHECKING:
 class Viewport3D(Widget):
     """Виджет, отображающий FBO от 3D-движка.
 
-    В render() блитует содержимое FBO напрямую в экранный буфер.
-    Пробрасывает ввод в input manager, привязанный к Display.
+    FBOSurface's FBO lives in the offscreen GL context (where present_display
+    writes to it). This widget runs in the main window GL context. Since FBOs
+    are per-context objects, we create a local FBO here that wraps the *shared*
+    color texture from the surface. Textures are shared between contexts.
     """
 
     def __init__(self) -> None:
@@ -41,6 +43,10 @@ class Viewport3D(Widget):
 
         # Коллбек вызывается при изменении размера (до того как FBO пересоздан)
         self.on_before_resize: Callable[[int, int], None] | None = None
+
+        # Local FBO in main window context wrapping the shared color texture.
+        self._local_blit_fbo: int = 0
+        self._local_blit_tex: int = 0
 
     # ------------------------------------------------------------------
     # Подключение
@@ -93,7 +99,7 @@ class Viewport3D(Widget):
     # ------------------------------------------------------------------
 
     def render(self, renderer: 'UIRenderer') -> None:
-        if self._surface is None or self._surface.get_framebuffer_id() == 0:
+        if self._surface is None or self._surface.color_texture_id == 0:
             # FBO не готов — заглушка
             renderer.draw_rect(self.x, self.y, self.width, self.height,
                                (0.05, 0.05, 0.05, 1.0))
@@ -106,11 +112,29 @@ class Viewport3D(Widget):
             glBindFramebuffer, GL_READ_FRAMEBUFFER, GL_DRAW_FRAMEBUFFER,
             GL_FRAMEBUFFER,
             glBlitFramebuffer, GL_COLOR_BUFFER_BIT, GL_LINEAR,
-            glDisable, glEnable, GL_SCISSOR_TEST,
+            glDisable, GL_SCISSOR_TEST,
+            glGenFramebuffers, glFramebufferTexture2D,
+            GL_TEXTURE_2D, GL_COLOR_ATTACHMENT0,
         )
 
-        fbo_id = self._surface.get_framebuffer_id()
+        tex_id = self._surface.color_texture_id
         fbo_w, fbo_h = self._surface.framebuffer_size()
+
+        # Create/update local FBO wrapping the shared color texture.
+        # The surface's FBO lives in the offscreen context and is not
+        # accessible here (main window context). But the color texture
+        # is shared between contexts, so we wrap it in a local FBO.
+        if self._local_blit_fbo == 0:
+            self._local_blit_fbo = int(glGenFramebuffers(1))
+
+        if self._local_blit_tex != tex_id:
+            glBindFramebuffer(GL_FRAMEBUFFER, self._local_blit_fbo)
+            glFramebufferTexture2D(
+                GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                GL_TEXTURE_2D, tex_id, 0,
+            )
+            glBindFramebuffer(GL_FRAMEBUFFER, 0)
+            self._local_blit_tex = tex_id
 
         # Координаты виджета в GL (Y=0 снизу, Y-flip от экранных координат)
         vp_h = renderer._viewport_h
@@ -123,7 +147,7 @@ class Viewport3D(Widget):
         # отключаем на время blit, восстанавливаем после
         glDisable(GL_SCISSOR_TEST)
 
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo_id)
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, self._local_blit_fbo)
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0)
         glBlitFramebuffer(
             0, 0, fbo_w, fbo_h,

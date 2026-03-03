@@ -43,7 +43,7 @@ def test_drag_left_side():
     sp.on_mouse_move(ev_move)
 
     new_w = target.preferred_width.to_pixels(VIEWPORT_W)
-    assert abs(new_w - 300) <= 0.5
+    assert abs(new_w - 200) <= 0.5
 
 
 # --- Drag right side ---
@@ -59,7 +59,7 @@ def test_drag_right_side():
     sp.on_mouse_move(ev_move)
 
     new_w = target.preferred_width.to_pixels(VIEWPORT_W)
-    assert abs(new_w - 200) <= 0.5
+    assert abs(new_w - 300) <= 0.5
 
 
 # --- Constraints ---
@@ -67,12 +67,12 @@ def test_drag_right_side():
 def test_min_width_constraint():
     target = _make_target(250)
     sp = Splitter(target=target, side="left")
-    sp._min_width = 100
+    sp._min_size = 100
 
     ev_down = MouseEvent(x=250, y=300, button=MouseButton.LEFT)
     sp.on_mouse_down(ev_down)
 
-    ev_move = MouseEvent(x=0, y=300)
+    ev_move = MouseEvent(x=9999, y=300)
     sp.on_mouse_move(ev_move)
 
     new_w = target.preferred_width.to_pixels(VIEWPORT_W)
@@ -81,10 +81,10 @@ def test_min_width_constraint():
 
 def test_max_width_constraint():
     target = _make_target(250)
-    sp = Splitter(target=target, side="left")
-    sp._max_width = 600
+    sp = Splitter(target=target, side="right")
+    sp._max_size = 600
 
-    ev_down = MouseEvent(x=250, y=300, button=MouseButton.LEFT)
+    ev_down = MouseEvent(x=1000, y=300, button=MouseButton.LEFT)
     sp.on_mouse_down(ev_down)
 
     ev_move = MouseEvent(x=9999, y=300)

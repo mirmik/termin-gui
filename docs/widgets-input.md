@@ -2,51 +2,85 @@
 
 ## TextInput (однострочный)
 
-API:
-- поля: `text`, `placeholder`, `cursor_pos`, `read_only`
-- callbacks: `on_changed(text)`, `on_submit(text)`
+Однострочное текстовое поле ввода.
 
-Поддерживаемые клавиши:
-- `Left/Right/Home/End`, `Backspace`, `Delete`, `Enter`
+| Поле | Описание |
+|------|----------|
+| `text` | Текущий текст |
+| `placeholder` | Текст-подсказка (при пустом поле) |
+| `cursor_pos` | Позиция курсора |
+| `read_only` | Только чтение |
+| `on_changed(text)` | Callback при изменении текста |
+| `on_submit(text)` | Callback при нажатии Enter |
+
+Поддерживаемые клавиши: `Left/Right/Home/End`, `Backspace`, `Delete`, `Enter`.
 
 ## TextArea (многострочный)
 
-API:
-- поле `text` (property)
-- поля: `placeholder`, `max_lines`, `read_only`, `word_wrap`, `line_height`
-- scrollbar: `show_scrollbar`, `scrollbar_width`
-- callback: `on_changed(text)`
+Многострочное текстовое поле.
 
-Поддерживает:
-- multiline-редактирование, scroll wheel, cursor navigation, word wrap.
+| Поле | Описание |
+|------|----------|
+| `text` | Текущий текст (property) |
+| `placeholder` | Текст-подсказка |
+| `max_lines` | Максимум строк |
+| `read_only` | Только чтение |
+| `word_wrap` | Перенос по словам |
+| `line_height` | Высота строки |
+| `show_scrollbar`, `scrollbar_width` | Полоса прокрутки |
+| `on_changed(text)` | Callback при изменении |
+
+Поддерживает multiline-редактирование, scroll wheel, cursor navigation.
 
 ## Slider
 
-API:
-- поля: `value`, `min_value`, `max_value`, `step` (`0` = continuous)
-- callback: `on_changed(value)`
+Ползунок для выбора числового значения.
+
+| Поле | Описание |
+|------|----------|
+| `value` | Текущее значение |
+| `min_value`, `max_value` | Диапазон |
+| `step` | Шаг (`0` = continuous) |
+| `on_changed(value)` | Callback при изменении |
 
 ## SpinBox
 
-API:
-- поля: `value`, `min_value`, `max_value`, `step`, `decimals`
-- callback: `on_changed(value)`
+Числовое поле с кнопками +/-.
+
+| Поле | Описание |
+|------|----------|
+| `value` | Текущее значение |
+| `min_value`, `max_value` | Диапазон |
+| `step` | Шаг изменения |
+| `decimals` | Количество десятичных знаков |
+| `on_changed(value)` | Callback при изменении |
 
 ## SliderEdit
 
-Составной виджет (`Slider` + `SpinBox`) с общей моделью значения.
+Составной виджет: `Slider` + `SpinBox` с общей моделью значения.
 
-API:
-- поля: `value`, `min_value`, `max_value`, `step`, `decimals`
-- layout: `spacing`, `spinbox_width`
-- callback: `on_changed(value)`
+| Поле | Описание |
+|------|----------|
+| `value`, `min_value`, `max_value`, `step`, `decimals` | Как у Slider/SpinBox |
+| `spacing` | Расстояние между slider и spinbox |
+| `spinbox_width` | Ширина SpinBox |
+| `on_changed(value)` | Callback при изменении |
 
 ## ComboBox
 
-API:
-- поля: `items`, `selected_index`, `selected_text`, `placeholder`
-- методы: `add_item(text)`, `clear()`, `item_count`, `item_text(index)`
-- callback: `on_changed(index, text)`
+Выпадающий список.
+
+| Поле/метод | Описание |
+|-----------|----------|
+| `items` | Список элементов |
+| `selected_index` | Индекс выбранного |
+| `selected_text` | Текст выбранного (read-only) |
+| `placeholder` | Текст при отсутствии выбора |
+| `add_item(text)` | Добавить элемент |
+| `clear()` | Очистить список |
+| `item_count` | Количество элементов |
+| `item_text(index)` | Текст элемента по индексу |
+| `on_changed(index, text)` | Callback при выборе |
 
 ## Пример
 

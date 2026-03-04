@@ -2,51 +2,78 @@
 
 ## Overlay API (через UI)
 
-- `ui.show_overlay(widget, modal=False, dismiss_on_outside=True, on_dismiss=None)`
-- `ui.hide_overlay(widget)`
+```python
+ui.show_overlay(widget, modal=False, dismiss_on_outside=True, on_dismiss=None)
+ui.hide_overlay(widget)
+```
 
 Этим механизмом пользуются `Menu`, `ComboBox`, `Dialog`, file dialogs.
 
 ## Dialog
 
-Базовый диалог с `title/content/buttons`.
+Базовый диалог с заголовком, содержимым и кнопками.
 
-API:
-- поля: `title`, `content`, `buttons`, `default_button`, `cancel_button`, `on_result`, `min_width`
-- методы: `show(ui, windowed=False)`, `close()`
+| Поле | Описание |
+|------|----------|
+| `title` | Заголовок |
+| `content` | Виджет содержимого |
+| `buttons` | Список кнопок |
+| `default_button` | Кнопка по умолчанию (Enter) |
+| `cancel_button` | Кнопка отмены (Escape) |
+| `on_result` | Callback с результатом |
+| `min_width` | Минимальная ширина |
 
-Поведение:
-- overlay mode (`windowed=False`) — центрируется внутри текущего `UI`;
-- windowed mode (`windowed=True`) — использует `ui.create_window`, если задан.
+Методы: `show(ui, windowed=False)`, `close()`.
+
+Режимы:
+
+- **Overlay** (`windowed=False`) — центрируется внутри текущего UI.
+- **Windowed** (`windowed=True`) — использует `ui.create_window`, если задан.
 
 ## MessageBox
 
-Готовые фабрики:
-- `MessageBox.info(...)`
-- `MessageBox.warning(...)`
-- `MessageBox.error(...)`
-- `MessageBox.question(...)`
+Готовые фабрики для типичных диалогов:
+
+| Метод | Назначение |
+|-------|-----------|
+| `MessageBox.info(...)` | Информационное сообщение |
+| `MessageBox.warning(...)` | Предупреждение |
+| `MessageBox.error(...)` | Ошибка |
+| `MessageBox.question(...)` | Вопрос с вариантами ответа |
 
 Пресеты кнопок: `Buttons.OK`, `Buttons.OK_CANCEL`, `Buttons.YES_NO`, `Buttons.YES_NO_CANCEL`.
 
 ## Input Dialog
 
-- `show_input_dialog(ui, title, message, default="", on_result=...)`
-- в callback возвращает `str` на OK и `None` на Cancel.
+```python
+show_input_dialog(ui, title, message, default="", on_result=callback)
+```
+
+Callback получает `str` при OK, `None` при Cancel.
 
 ## ColorDialog
 
-- `ColorDialog.pick_color(ui, initial=(r,g,b,a), show_alpha=True, on_result=...)`
-- callback: `(r,g,b,a)` или `None`.
+```python
+ColorDialog.pick_color(ui, initial=(r, g, b, a), show_alpha=True, on_result=callback)
+```
+
+Callback получает `(r, g, b, a)` или `None`.
 
 ## File dialogs
 
-- `show_open_file_dialog(ui, on_result, *, title="Open File", directory="", filter_str="", filetypes=None, windowed=False)`
-- `show_save_file_dialog(...)`
-- `show_open_directory_dialog(...)`
-- helper: `parse_filter_string("Images | *.png *.jpg;;All files | *.*")`
+| Функция | Описание |
+|---------|----------|
+| `show_open_file_dialog(ui, on_result, ...)` | Открыть файл |
+| `show_save_file_dialog(ui, on_result, ...)` | Сохранить файл |
+| `show_open_directory_dialog(ui, on_result, ...)` | Выбрать директорию |
+
+Общие параметры: `title`, `directory`, `filter_str`, `filetypes`, `windowed`.
 
 `on_result` всегда получает `path: str | None`.
+
+Формат фильтра: `"Images | *.png *.jpg;;All files | *.*"`
+
+Helper: `parse_filter_string(filter_str)`.
 
 ## Пример
 

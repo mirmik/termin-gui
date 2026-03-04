@@ -2,44 +2,58 @@
 
 ## Canvas
 
-`Canvas` — zoom/pan виджет для RGBA numpy-изображений + overlay-слоя.
+Zoom/pan виджет для отображения RGBA numpy-изображений с overlay-слоем.
 
-API:
-- данные:
-  - `set_image(np_rgba_or_none)`
-  - `set_overlay(np_rgba_or_none)`
-  - `set_overlay_ref(np_rgba_or_none)`
-  - `mark_overlay_dirty(x0, y0, x1, y1)`
-- viewport:
-  - `zoom` (property)
-  - `set_zoom(value, anchor_wx=None, anchor_wy=None)`
-  - `fit_in_view()`
-  - `center_on(ix, iy)`
-  - `widget_to_image(wx, wy)`, `image_to_widget(ix, iy)`
-- callbacks:
-  - `on_canvas_mouse_down(ix, iy, button, mods)`
-  - `on_canvas_mouse_move(ix, iy)`
-  - `on_canvas_mouse_up(ix, iy)`
-  - `on_zoom_changed(zoom)`
-  - `on_render_overlay(canvas, renderer)`
+### Данные
 
-Поведение:
-- middle mouse drag = pan;
-- wheel = zoom around cursor;
-- `min_zoom`, `max_zoom`, `zoom_factor` настраиваемы.
+| Метод | Описание |
+|-------|----------|
+| `set_image(np_rgba_or_none)` | Установить основное изображение |
+| `set_overlay(np_rgba_or_none)` | Установить overlay (копирование) |
+| `set_overlay_ref(np_rgba_or_none)` | Установить overlay (по ссылке) |
+| `mark_overlay_dirty(x0, y0, x1, y1)` | Пометить область overlay для обновления |
+
+### Навигация
+
+| Поле/метод | Описание |
+|-----------|----------|
+| `zoom` | Текущий масштаб (property) |
+| `set_zoom(value, anchor_wx, anchor_wy)` | Установить масштаб с якорем |
+| `fit_in_view()` | Вписать изображение в виджет |
+| `center_on(ix, iy)` | Центрировать на точке изображения |
+| `widget_to_image(wx, wy)` | Координаты виджета -> изображения |
+| `image_to_widget(ix, iy)` | Координаты изображения -> виджета |
+| `min_zoom`, `max_zoom`, `zoom_factor` | Ограничения масштаба |
+
+### Callbacks
+
+| Callback | Описание |
+|----------|----------|
+| `on_canvas_mouse_down(ix, iy, button, mods)` | Клик (в координатах изображения) |
+| `on_canvas_mouse_move(ix, iy)` | Движение мыши |
+| `on_canvas_mouse_up(ix, iy)` | Отпускание кнопки |
+| `on_zoom_changed(zoom)` | Изменение масштаба |
+| `on_render_overlay(canvas, renderer)` | Отрисовка поверх канваса |
+
+### Управление
+
+- Middle mouse drag = pan
+- Wheel = zoom (вокруг курсора)
 
 ## Viewport3D
 
-`Viewport3D` показывает FBO-сцену от `termin` и пересылает input в 3D input manager.
+Виджет для отображения FBO-сцены из `termin`. Пересылает input в 3D input manager.
 
-API:
-- `set_surface(surface, display=None)`
-- callback: `on_before_resize(new_w, new_h)`
+| Поле/метод | Описание |
+|-----------|----------|
+| `set_surface(surface, display=None)` | Подключить FBO-поверхность |
+| `on_before_resize(new_w, new_h)` | Callback перед resize |
 
 Особенности:
-- получает цветовую текстуру FBO и blit-ит ее в область виджета;
-- при resize вызывает `surface.resize(new_w, new_h)`;
-- обрабатывает `on_mouse_*`, `on_key_down`, `on_key_up` как прокси в native input.
+
+- Получает цветовую текстуру FBO и blit-ит её в область виджета.
+- При resize вызывает `surface.resize(new_w, new_h)`.
+- Обрабатывает `on_mouse_*`, `on_key_down`, `on_key_up` как прокси в native input.
 
 ## Пример Canvas
 

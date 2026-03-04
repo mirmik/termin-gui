@@ -2,73 +2,104 @@
 
 ## HStack
 
-Горизонтальная раскладка.
+Горизонтальная раскладка. Дети располагаются в строку слева направо.
 
-API:
-- поля: `spacing`, `alignment` (`top|center|bottom`), `justify` (`start|center|end`)
-- поддерживает `child.stretch = True` для растягивания по ширине
+| Поле | Описание |
+|------|----------|
+| `spacing` | Расстояние между детьми (px) |
+| `alignment` | Вертикальное выравнивание: `top`, `center`, `bottom` |
+| `justify` | Горизонтальное: `start`, `center`, `end` |
+
+`child.stretch = True` — ребёнок растягивается по оставшейся ширине.
 
 ## VStack
 
-Вертикальная раскладка.
+Вертикальная раскладка. Дети располагаются в столбец сверху вниз.
 
-API:
-- поля: `spacing`, `alignment` (`left|center|right`), `justify` (`start|center|end`)
-- поддерживает `child.stretch = True` для растягивания по высоте
+| Поле | Описание |
+|------|----------|
+| `spacing` | Расстояние между детьми (px) |
+| `alignment` | Горизонтальное выравнивание: `left`, `center`, `right` |
+| `justify` | Вертикальное: `start`, `center`, `end` |
+
+`child.stretch = True` — ребёнок растягивается по оставшейся высоте.
 
 ## GridLayout
 
-Сетка с явным позиционированием.
+Сетка с явным позиционированием по строкам и столбцам.
 
-API:
-- `GridLayout(columns=2)`
-- `add(child, row, col, row_span=1, col_span=1)`
-- `clear()`
-- `set_column_stretch(column, stretch)`
-- `set_row_stretch(row, stretch)`
-- поля: `row_spacing`, `column_spacing`, `padding`
+```python
+grid = GridLayout(columns=3)
+grid.add(widget_a, row=0, col=0)
+grid.add(widget_b, row=0, col=1, col_span=2)
+```
+
+| Поле/метод | Описание |
+|-----------|----------|
+| `add(child, row, col, row_span=1, col_span=1)` | Разместить виджет |
+| `clear()` | Очистить сетку |
+| `set_column_stretch(col, stretch)` | Растяжение колонки |
+| `set_row_stretch(row, stretch)` | Растяжение строки |
+| `row_spacing`, `column_spacing` | Отступы между ячейками |
+| `padding` | Внутренний отступ |
 
 ## Panel
 
-Контейнер с фоном и паддингом.
+Контейнер с фоном и паддингом. Основной строительный блок для секций интерфейса.
 
-API:
-- поля: `padding`, `background_color`, `border_radius`
-- фон-изображение: `background_image`, `background_tint`
+| Поле | Описание |
+|------|----------|
+| `padding` | Внутренний отступ |
+| `background_color` | Цвет фона |
+| `border_radius` | Скругление углов |
+| `background_image` | Фоновое изображение |
+| `background_tint` | Тонирование фонового изображения |
 
-Поведение:
-- child раскладываются с учетом `anchor`/`offset`/`position_*`.
+Дети раскладываются с учётом `anchor` / `offset` / `position_*`.
 
 ## ScrollArea
 
-Скроллируемый контейнер (обычно один child с большим контентом).
+Скроллируемый контейнер. Обычно содержит один ребёнок с большим контентом.
 
-API:
-- поля: `scroll_x`, `scroll_y`, `scroll_speed`
-- scrollbar: `show_scrollbar`, `scrollbar_width`, `scrollbar_color`, `scrollbar_hover_color`
+| Поле | Описание |
+|------|----------|
+| `scroll_x`, `scroll_y` | Текущая позиция скролла |
+| `scroll_speed` | Скорость скролла |
+| `show_scrollbar` | Показывать полосу прокрутки |
+| `scrollbar_width` | Ширина полосы |
+| `scrollbar_color`, `scrollbar_hover_color` | Цвета полосы |
 
-Поведение:
-- wheel меняет `scroll_y`;
-- drag по scrollbar поддерживается из коробки.
+Wheel меняет `scroll_y`. Drag по scrollbar поддерживается из коробки.
 
 ## GroupBox
 
 Сворачиваемая секция с заголовком.
 
-API:
-- поля: `title`, `expanded`, `title_height`, `content_padding`, `spacing`
-- callback: `on_toggle(expanded: bool)`
+| Поле | Описание |
+|------|----------|
+| `title` | Текст заголовка |
+| `expanded` | Развёрнута ли секция |
+| `title_height` | Высота заголовка |
+| `content_padding` | Отступ содержимого |
+| `spacing` | Расстояние между детьми |
+| `on_toggle(expanded)` | Callback при сворачивании/разворачивании |
 
 ## Splitter
 
 Перетаскиваемый разделитель для изменения размера соседней панели.
 
-API:
-- `Splitter(target: Widget, side="left|right|top|bottom")`
-- поля: `color`, `hover_color`, `bar_width`
+```python
+splitter = Splitter(target=left_panel, side="right")
+```
 
-Поведение:
-- при drag меняет `target.preferred_width` или `target.preferred_height`.
+| Поле | Описание |
+|------|----------|
+| `target` | Виджет, размер которого меняется |
+| `side` | Сторона: `left`, `right`, `top`, `bottom` |
+| `color`, `hover_color` | Цвета разделителя |
+| `bar_width` | Ширина полосы |
+
+При drag меняет `target.preferred_width` или `target.preferred_height`.
 
 ## Пример
 

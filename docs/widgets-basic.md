@@ -2,50 +2,96 @@
 
 ## Label
 
-API:
-- поля: `text`, `color`, `font_size`, `alignment` (`left|center|right`)
+Текстовая метка.
+
+| Поле | Описание |
+|------|----------|
+| `text` | Текст |
+| `color` | Цвет текста |
+| `font_size` | Размер шрифта |
+| `alignment` | Выравнивание: `left`, `center`, `right` |
 
 ## Button
 
-API:
-- поля: `text`, `icon`, `checkable`, `checked`
-- цвета: `background_color`, `hover_color`, `pressed_color`, `checked_color`, `text_color`
-- callback: `on_click()`
+Кнопка с текстом и/или иконкой.
+
+| Поле | Описание |
+|------|----------|
+| `text` | Текст кнопки |
+| `icon` | Иконка |
+| `checkable` | Может ли быть toggle-кнопкой |
+| `checked` | Состояние toggle |
+| `on_click()` | Callback при нажатии |
+| `background_color`, `hover_color`, `pressed_color` | Цвета состояний |
+| `checked_color`, `text_color` | Цвет в checked-состоянии, цвет текста |
 
 ## Checkbox
 
-API:
-- поля: `text`, `checked`, `box_size`, `font_size`, `spacing`
-- callback: `on_changed(checked: bool)`
+Чекбокс с текстовой меткой.
+
+| Поле | Описание |
+|------|----------|
+| `text` | Текст рядом с чекбоксом |
+| `checked` | Текущее состояние |
+| `box_size` | Размер квадрата |
+| `font_size` | Размер текста |
+| `spacing` | Расстояние между квадратом и текстом |
+| `on_changed(checked)` | Callback при изменении |
 
 ## IconButton
 
-API:
-- поля: `icon`, `active`, `size`, `font_size`, `tooltip`
-- callback: `on_click()`
+Кнопка-иконка (без текста).
+
+| Поле | Описание |
+|------|----------|
+| `icon` | Иконка |
+| `active` | Подсвечена ли кнопка |
+| `size` | Размер кнопки |
+| `font_size` | Размер иконки |
+| `tooltip` | Подсказка при наведении |
+| `on_click()` | Callback при нажатии |
 
 ## Separator
 
-API:
-- поля: `orientation` (`vertical|horizontal`), `color`, `thickness`, `margin`
+Визуальный разделитель.
+
+| Поле | Описание |
+|------|----------|
+| `orientation` | `vertical` или `horizontal` |
+| `color` | Цвет линии |
+| `thickness` | Толщина |
+| `margin` | Отступ с краёв |
 
 ## ImageWidget
 
-API:
-- поля: `image_path`, `tint`
-- размер без `preferred_*`: из реального размера картинки (после загрузки)
+Виджет для отображения изображения.
+
+| Поле | Описание |
+|------|----------|
+| `image_path` | Путь к изображению |
+| `tint` | Тонирование |
+
+Без `preferred_width/height` размер берётся из реальных размеров картинки.
 
 ## ProgressBar
 
-API:
-- поля: `value` (`0..1`), `show_text`
-- цвета: `background_color`, `fill_color`, `text_color`
+Полоса прогресса.
+
+| Поле | Описание |
+|------|----------|
+| `value` | Прогресс (0.0 .. 1.0) |
+| `show_text` | Показывать процент текстом |
+| `background_color`, `fill_color`, `text_color` | Цвета |
 
 ## FrameTimeGraph
 
-API:
-- `add_frame(ms)`, `clear()`
-- поле: `max_values`
+График времени кадра (для отладки производительности).
+
+| Поле/метод | Описание |
+|-----------|----------|
+| `add_frame(ms)` | Добавить значение кадра |
+| `clear()` | Очистить график |
+| `max_values` | Максимум значений на графике |
 
 ## Пример
 

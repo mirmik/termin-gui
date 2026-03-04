@@ -220,7 +220,7 @@ def test_splitter_relayout():
     assert abs(left.width - 250) <= 0.5
     assert abs(canvas.width - 745) <= 0.5  # 1000 - 250 - 5
 
-    # Simulate drag: expand left to 400
+    # Simulate drag: for side="left", dragging right shrinks left panel
     ev_down = MouseEvent(x=250, y=300, button=MouseButton.LEFT)
     spl.on_mouse_down(ev_down)
     ev_move = MouseEvent(x=400, y=300)
@@ -229,6 +229,6 @@ def test_splitter_relayout():
     # Re-layout
     hs.layout(0, 0, 1000, 600, VIEWPORT_W, VIEWPORT_H)
     new_left_w = left.preferred_width.to_pixels(VIEWPORT_W)
-    assert abs(new_left_w - 400) <= 0.5
-    assert abs(left.width - 400) <= 0.5
-    assert abs(canvas.width - 595) <= 0.5  # 1000 - 400 - 5
+    assert abs(new_left_w - 100) <= 0.5
+    assert abs(left.width - 100) <= 0.5
+    assert abs(canvas.width - 895) <= 0.5  # 1000 - 100 - 5

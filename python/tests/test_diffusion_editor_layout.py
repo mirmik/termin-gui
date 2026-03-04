@@ -529,7 +529,7 @@ class TestSplitterDrag:
         spl = ui["spl_left"]
         old_canvas_w = ui["canvas"].width
 
-        # Drag left splitter right by 50px (expand left panel)
+        # Drag left splitter right by 50px (shrink left panel for side="left")
         ev_down = MouseEvent(x=spl.x + 2, y=spl.y + 100, button=MouseButton.LEFT)
         spl.on_mouse_down(ev_down)
         ev_move = MouseEvent(x=spl.x + 52, y=spl.y + 100)
@@ -539,16 +539,16 @@ class TestSplitterDrag:
         # Re-layout
         ui["root"].layout(0, 0, 1280, 800, 1280, 800)
         new_lc_w = ui["left_container"].width
-        assert abs(new_lc_w - (LEFT_CONTAINER_W + 50)) <= 1.0
-        # Canvas shrinks by 50
-        assert abs(ui["canvas"].width - (old_canvas_w - 50)) <= 1.0
+        assert abs(new_lc_w - (LEFT_CONTAINER_W - 50)) <= 1.0
+        # Canvas grows by 50
+        assert abs(ui["canvas"].width - (old_canvas_w + 50)) <= 1.0
 
     def test_drag_right_splitter_wider(self):
         ui = _build_editor_ui(1280, 800)
         spl = ui["spl_right"]
         old_canvas_w = ui["canvas"].width
 
-        # Drag right splitter left by 30px (expand right panel)
+        # Drag right splitter left by 30px (shrink right panel for side="right")
         ev_down = MouseEvent(x=spl.x + 2, y=spl.y + 100, button=MouseButton.LEFT)
         spl.on_mouse_down(ev_down)
         ev_move = MouseEvent(x=spl.x - 28, y=spl.y + 100)
@@ -557,8 +557,8 @@ class TestSplitterDrag:
 
         ui["root"].layout(0, 0, 1280, 800, 1280, 800)
         new_lp_w = ui["layer_panel"].width
-        assert abs(new_lp_w - (LAYER_PANEL_W + 30)) <= 1.0
-        assert abs(ui["canvas"].width - (old_canvas_w - 30)) <= 1.0
+        assert abs(new_lp_w - (LAYER_PANEL_W - 30)) <= 1.0
+        assert abs(ui["canvas"].width - (old_canvas_w + 30)) <= 1.0
 
     def test_splitter_min_width(self):
         ui = _build_editor_ui(1280, 800)
@@ -566,13 +566,13 @@ class TestSplitterDrag:
 
         ev_down = MouseEvent(x=spl.x + 2, y=spl.y + 100, button=MouseButton.LEFT)
         spl.on_mouse_down(ev_down)
-        # Drag far left — should clamp to min_width
-        ev_move = MouseEvent(x=0, y=spl.y + 100)
+        # Drag far right — side="left" shrinks target when moving right.
+        ev_move = MouseEvent(x=9999, y=spl.y + 100)
         spl.on_mouse_move(ev_move)
-        spl.on_mouse_up(MouseEvent(x=0, y=spl.y + 100))
+        spl.on_mouse_up(MouseEvent(x=9999, y=spl.y + 100))
 
         ui["root"].layout(0, 0, 1280, 800, 1280, 800)
-        assert ui["left_container"].width >= spl._min_width - 0.5
+        assert ui["left_container"].width >= spl._min_size - 0.5
 
 
 # =========================================================================

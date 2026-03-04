@@ -1,7 +1,7 @@
 site_name: termin-gui
 site_description: Widget-based UI framework documentation
-repo_url: https://github.com/rfmeas/termin-gui
-repo_name: rfmeas/termin-gui
+repo_url: https://github.com/mirmik/termin-gui
+repo_name: mirmik/termin-gui
 theme:
   name: material
   language: ru
